@@ -1,82 +1,63 @@
 pipeline {
     agent any 
-    
-    tools{
-        jdk 'jdk11'
-        maven 'maven3'
-    }
-    
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
-    }
-    
-    stages{
+        SONARQUBE_SERVER = 'Sonarqube-8.9.2'
+        SONAR_PROJECT_KEY = 'Petclinic'
+        SONAR_PROJECT_NAME = 'Petclinic'
+        MAVEN_HOME = tool name: 'maven3'
+        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
         
-        stage("Git Checkout"){
-            steps{
+    }
+
+    stages {
+        stage('Git Checkout') {
+            steps {
                 git branch: 'main', changelog: false, poll: false, url: 'https://github.com/jaiswaladi246/Petclinic.git'
             }
         }
-        
-        stage("Compile"){
-            steps{
-                sh "mvn clean compile"
-            }
-        }
-        
-         stage("Test Cases"){
-            steps{
-                sh "mvn test"
-            }
-        }
-        
-        stage("Sonarqube Analysis "){
-            steps{
-                withSonarQubeEnv('sonar-server') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Petclinic \
-                    -Dsonar.java.binaries=. \
-                    -Dsonar.projectKey=Petclinic '''
-    
+
+        stage('Build') {
+            steps {
+                script {
+                    sh "${MAVEN_HOME}/bin/mvn clean install -X"
                 }
             }
         }
-        
-        stage("OWASP Dependency Check"){
-            steps{
-                dependencyCheck additionalArguments: '--scan ./ --format HTML ', odcInstallation: 'DP'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-        
-         stage("Build"){
-            steps{
-                sh " mvn clean install"
-            }
-        }
-        
-        stage("Docker Build & Push"){
-            steps{
-                script{
-                   withDockerRegistry(credentialsId: '58be877c-9294-410e-98ee-6a959d73b352', toolName: 'docker') {
-                        
-                        sh "docker build -t image1 ."
-                        sh "docker tag image1 adijaiswal/pet-clinic123:latest "
-                        sh "docker push adijaiswal/pet-clinic123:latest "
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        sh """
+                        ${MAVEN_HOME}/bin/mvn sonar:sonar \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.host.url=${SONARQUBE_URL} \
+                        -Dsonar.login=${SONARQUBE_TOKEN} \
+                        -Dsonar.ws.timeout=600 \
+                        """
                     }
                 }
             }
         }
-        
-        stage("TRIVY"){
-            steps{
-                sh " trivy image adijaiswal/pet-clinic123:latest"
-            }
-        }
-        
-        stage("Deploy To Tomcat"){
-            steps{
-                sh "cp  /var/lib/jenkins/workspace/CI-CD/target/petclinic.war /opt/apache-tomcat-9.0.65/webapps/ "
+
+        stage('Post-build Actions') {
+            steps {
+                echo 'Post-build actions can be added here.'
             }
         }
     }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+        always {
+            cleanWs()
+        }
+    }
 }
+
