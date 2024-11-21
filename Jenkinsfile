@@ -40,17 +40,13 @@ pipeline {
                 }
             }
         }
-        stage('Quality Gate') {
-            steps {
-                script {
-                    // This is where you can run the waitForQualityGate step
-                    def qg = waitForQualityGate()
-                    if (qg.status != 'OK') {
-                        error "Quality gate failed: ${qg.status}"
-                    }
-                }
-            }
-        }
+		stage("Quality Gate") {
+			steps {
+				timeout(time: 1, unit: 'HOURS') {
+					waitForQualityGate abortPipeline: true
+				}
+			}
+		}
 
         stage('Post-build Actions') {
             steps {
