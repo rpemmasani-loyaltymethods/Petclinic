@@ -1,12 +1,12 @@
 pipeline {
-    agent any 
+    agent any
     environment {
         SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         SONAR_PROJECT_KEY = 'Petclinic'
         SONAR_PROJECT_NAME = 'Petclinic'
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
-        
+
     }
 
     stages {
@@ -40,6 +40,14 @@ pipeline {
                 }
             }
         }
+		stage("Quality Gate"){
+		  timeout(time: 1, unit: 'HOURS') {
+			  def qg = waitForQualityGate()
+			  if (qg.status != 'OK') {
+				  error "Pipeline aborted due to quality gate failure: ${qg.status}"
+			  }
+		  }
+		}
 
         stage('Post-build Actions') {
             steps {
