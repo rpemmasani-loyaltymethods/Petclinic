@@ -40,18 +40,14 @@ pipeline {
                 }
             }
         }
-		stage ("Quality Gate") {
-		   steps {
-			  withSonarQubeEnv('SonarQube') {
-				 sh "../../../sonar-scanner-6.2.0.4584/bin/sonar-scanner"   
-			  }
-
-			  def qualitygate = waitForQualityGate()
-			  if (qualitygate.status != "OK") {
-				 error "Pipeline aborted due to quality gate coverage failure: ${qualitygate.status}"
-			  }
-		   }
+		stage("Quality Gate") {
+			steps {
+				timeout(time: 1, unit: 'HOURS') {
+					waitForQualityGate abortPipeline: true
+				}
+			}
 		}
+
         stage('Post-build Actions') {
             steps {
                 echo 'Post-build actions can be added here.'
