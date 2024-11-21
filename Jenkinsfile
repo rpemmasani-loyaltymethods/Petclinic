@@ -35,7 +35,7 @@ pipeline {
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600 \
-						sonar.web.host=your-${SONARQUBE_URL}
+						sonar.web.host=${SONARQUBE_URL}
                         """
                     }
                 }
