@@ -27,11 +27,24 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
+				
+                    def branchName = env.BRANCH_NAME
+                    def qualityGate
+
+                    // Define quality gate based on the branch
+                    if (branchName == 'main') {
+                        qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
+                    } else if (branchName.startsWith('feature/')) {
+                        qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
+                    } else {
+                        qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
+                    }
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                         -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+						-Dsonar.branch.name=${branchName} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600 \
