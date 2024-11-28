@@ -6,7 +6,7 @@ pipeline {
         SONAR_PROJECT_NAME = 'Petclinic'
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
-
+        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
@@ -35,27 +35,46 @@ pipeline {
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600 \
-						sonar.web.host=${SONARQUBE_URL}
                         """
                     }
                 }
             }
         }
-		stage("Quality Gate") {
-			steps {
-				timeout(time: 1, unit: 'HOURS') {
-					waitForQualityGate abortPipeline: true
-				}
-			}
-		}
 
-        stage('Post-build Actions') {
+        stage('Quality Gate') {
             steps {
-                echo 'Post-build actions can be added here.'
+                script {
+                    // Define SonarQube project status API URL
+                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${SONAR_PROJECT_KEY}"
+
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        // Fetch the quality gate status and write it to a file
+                        sh """
+                            curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
+                        """
+
+                        // Use Python to process the JSON file
+                        sh """
+                            python3 -c "
+import json
+import sys
+# Read the JSON file
+with open('sonar_status.json', 'r') as f:
+    data = json.load(f)
+print (data)
+# Extract relevant information from the JSON
+sonarStatus = data.get('projectStatus', {}).get('status', 'Unknown')
+print (sonarStatus)
+if (sonarStatus != 'OK'):
+    print ('Quality Gate failed! SonarQube status: {}'.format(sonarStatus))
+    sys.exit(1)  # Exit with status code 1 to fail the pipeline
+    "
+"""
+                    }
+                }
             }
         }
     }
-
     post {
         success {
             echo 'Pipeline completed successfully.'
