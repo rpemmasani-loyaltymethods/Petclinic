@@ -35,11 +35,14 @@ pipeline {
                     if (branchName == 'main') {
                         qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
                         echo "SonarQube Quality Gate Status: ${qualityGate}"
+                        gateId = 'AZNNLvaHpgzBmh7BHF2f'
                     } else if (branchName.startsWith('feature/')) {
                         qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
                         echo "SonarQube Quality Gate Status: ${qualityGate}"
+                        gateId = 'AZNNK3BIpgzBmh7BHF2X'
                     } else {
                         qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
+                        gateId = 'AZNxdEFapgzBmh7BHF5j'
                     }
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
@@ -50,7 +53,7 @@ pipeline {
                         -Dsonar.branch.name=${branchName} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.qualitygate=${qualityGate} \
+                        -Dsonar.qualitygate=${gateId} \
                         -Dsonar.ws.timeout=600
                         """
                     }
@@ -101,4 +104,3 @@ pipeline {
         }
     }
 }
-
