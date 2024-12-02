@@ -27,14 +27,28 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
+                    def branchName = env.BRANCH_NAME
+                    def qualityGate
+
+                    // Define quality gate based on the branch
+                    if (branchName == 'main') {
+                        qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
+                    } else if (branchName.startsWith('feature/')) {
+                        qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
+                    } else {
+                        qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
+                    }
+
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                         -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.branch.name=${branchName} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.ws.timeout=600 \
+                        -Dsonar.qualitygate=${qualityGate} \
+                        -Dsonar.ws.timeout=600
                         """
                     }
                 }
@@ -52,29 +66,26 @@ pipeline {
                         sh """
                             curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
                         """
+                        
+                        // Groovy script to check the quality gate status from the JSON file
+                        def sonarStatusJson = readFile('sonar_status.json')
+                        def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
+                        
+                        // Extract relevant information from the JSON
+                        def sonarStatus = sonarData?.projectStatus?.status ?: 'Unknown'
+                        echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
-                        // Use Python to process the JSON file
-                        sh """
-                            python3 -c "
-										import json
-										import sys
-										# Read the JSON file
-										with open('sonar_status.json', 'r') as f:
-											data = json.load(f)
-										print (data)
-										# Extract relevant information from the JSON
-										sonarStatus = data.get('projectStatus', {}).get('status', 'Unknown')
-										print (sonarStatus)
-										if (sonarStatus != 'OK'):
-											print ('Quality Gate failed! SonarQube status: {}'.format(sonarStatus))
-											sys.exit(1)  # Exit with status code 1 to fail the pipeline
-											"
-											"""
+                        if (sonarStatus != 'OK') {
+                            echo "Quality Gate failed! SonarQube status: ${sonarStatus}"
+                            currentBuild.result = 'FAILURE'  // Mark the build as failed
+                            error "Quality Gate Failed!"  // Terminate the build with failure
+                        }
                     }
                 }
             }
         }
     }
+
     post {
         success {
             echo 'Pipeline completed successfully.'
