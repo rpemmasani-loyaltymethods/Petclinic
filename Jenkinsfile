@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     def branchName = env.BRANCH_NAME
-                    echo "SonarQube Quality Gate Status: ${branchName}"
+                    echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
                     def qualityGate
 
                     // Define quality gate based on the branch
