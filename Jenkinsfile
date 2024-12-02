@@ -68,8 +68,9 @@ pipeline {
                         """
 
                         // Use Python to process the JSON file and check the quality gate status
-                        sh '''
-                            python3 -c "import json
+                        sh """
+                            python3 -c "
+import json
 import sys
 # Read the JSON file
 with open('sonar_status.json', 'r') as f:
@@ -81,7 +82,7 @@ if sonarStatus != 'OK':
     print('Quality Gate failed! SonarQube status: {}'.format(sonarStatus))
     sys.exit(1)  # Exit with status code 1 to fail the pipeline
                             "
-                        '''
+                        """
                     }
                 }
             }
@@ -100,4 +101,3 @@ if sonarStatus != 'OK':
         }
     }
 }
-
