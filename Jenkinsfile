@@ -55,6 +55,17 @@ pipeline {
                         -Dsonar.qualitygate=${gateId} \
                         -Dsonar.ws.timeout=600
                         """
+
+                        // Apply the Quality Gate using the SonarQube REST API
+                        def qualityGateId = 'AZNNLvaHpgzBmh7BHF2f' // Replace with the actual quality gate ID you want to use
+                        def sonarApiUrl = "${SONARQUBE_URL}/api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}"
+
+                        // Perform the REST API call to apply the selected Quality Gate
+                        sh """
+                            curl -u ${SONARQUBE_TOKEN}: -X POST \
+                            -d "qualityGate=${gateId}" \
+                            ${sonarApiUrl}
+                        """
                     }
                 }
             }
