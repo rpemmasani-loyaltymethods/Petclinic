@@ -28,6 +28,7 @@ pipeline {
             steps {
                 script {
                     def branchName = env.BRANCH_NAME
+                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                     echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
                     def qualityGate
 
