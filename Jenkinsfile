@@ -38,6 +38,7 @@ pipeline {
                     } else {
                         qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
                     }
+
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
@@ -46,7 +47,8 @@ pipeline {
                         -Dsonar.branch.name=${branchName} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.ws.timeout=600 \
+                        -Dsonar.qualitygate=${qualityGate} \
+                        -Dsonar.ws.timeout=600
                         """
                     }
                 }
@@ -65,7 +67,7 @@ pipeline {
                             curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
                         """
 
-                        // Use Python to process the JSON file
+                        // Use Python to process the JSON file and check the quality gate status
                         sh """
                             python3 -c '
 import json
@@ -86,6 +88,7 @@ if sonarStatus != "OK":
             }
         }
     }
+
     post {
         success {
             echo 'Pipeline completed successfully.'
