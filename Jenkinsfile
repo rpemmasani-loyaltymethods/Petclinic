@@ -28,13 +28,16 @@ pipeline {
             steps {
                 script {
                     def branchName = env.BRANCH_NAME
+                    echo "SonarQube Quality Gate Status: ${branchName}"
                     def qualityGate
 
                     // Define quality gate based on the branch
                     if (branchName == 'main') {
                         qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
+                        echo "SonarQube Quality Gate Status: ${qualityGate}"
                     } else if (branchName.startsWith('feature/')) {
                         qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
+                        echo "SonarQube Quality Gate Status: ${qualityGate}"
                     } else {
                         qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
                     }
