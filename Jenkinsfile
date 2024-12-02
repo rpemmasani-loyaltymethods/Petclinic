@@ -27,7 +27,6 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-				
                     def branchName = env.BRANCH_NAME
                     def qualityGate
 
@@ -44,7 +43,7 @@ pipeline {
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                         -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-						-Dsonar.branch.name=${branchName} \
+                        -Dsonar.branch.name=${branchName} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600 \
@@ -68,21 +67,20 @@ pipeline {
 
                         // Use Python to process the JSON file
                         sh """
-                            python3 -c "
+                            python3 -c '
 import json
 import sys
 # Read the JSON file
-with open('sonar_status.json', 'r') as f:
-	data = json.load(f)
-print (data)
+with open("sonar_status.json", "r") as f:
+    data = json.load(f)
 # Extract relevant information from the JSON
-sonarStatus = data.get('projectStatus', {}).get('status', 'Unknown')
-print (sonarStatus)
-if (sonarStatus != 'OK'):
-	print ('Quality Gate failed! SonarQube status: {}'.format(sonarStatus))
-	sys.exit(1)  # Exit with status code 1 to fail the pipeline
-	"
-	"""
+sonarStatus = data.get("projectStatus", {}).get("status", "Unknown")
+print(sonarStatus)
+if sonarStatus != "OK":
+    print("Quality Gate failed! SonarQube status: {}".format(sonarStatus))
+    sys.exit(1)  # Exit with status code 1 to fail the pipeline
+                            '
+                        """
                     }
                 }
             }
