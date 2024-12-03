@@ -30,6 +30,7 @@ pipeline {
                     def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                     echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
                     def qualityGate
+                    def gateId
 
                     // Define quality gate based on the branch
                     if (branchName == 'main') {
@@ -46,27 +47,29 @@ pipeline {
                     }
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        // SonarQube Analysis
                         sh """
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                         -Dsonar.projectName=${SONAR_PROJECT_NAME} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.qualitygate=${gateId} \
                         -Dsonar.ws.timeout=600
                         """
 
-                        // Apply the Quality Gate using the SonarQube REST API
-                        def qualityGateId = 'AZNNLvaHpgzBmh7BHF2f' // Replace with the actual quality gate ID you want to use
-                        def sonarApiUrl = "${SONARQUBE_URL}/api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}"
-
-                        // Perform the REST API call to apply the selected Quality Gate
+                    }
+                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
+                        // Set quality gate via SonarQube API (with proper credentials and URL)
                         sh """
-                            curl -u ${SONARQUBE_TOKEN}: -X POST \
-                            -d "qualityGate=${gateId}" \
-                            ${sonarApiUrl}
+                        curl --header 'Authorization: Basic ${SonarToken}' \
+                        --location 'https://sonarqube.devops.lmvi.net/api/qualitygates/set_as_default' \
+                        --data-urlencode "name=Main-Quality-Gate"
                         """
                     }
+
+                    // Sleep for 2 minutes after SonarQube analysis
+                    echo 'Sleeping for 2 minutes after SonarQube analysis...'
+                    sleep(time: 2, unit: 'MINUTES')
                 }
             }
         }
@@ -114,3 +117,4 @@ pipeline {
         }
     }
 }
+
