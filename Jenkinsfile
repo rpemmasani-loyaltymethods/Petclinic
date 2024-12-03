@@ -63,7 +63,7 @@ pipeline {
                         sh """
                         curl --header 'Authorization: Basic ${SonarToken}' \
                         --location 'https://sonarqube.devops.lmvi.net/api/qualitygates/set_as_default' \
-                        --data-urlencode "name=Main-Quality-Gate"
+                        --data-urlencode "name=${qualityGate}"
                         """
                     }
 
