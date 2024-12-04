@@ -41,12 +41,13 @@ pipeline {
                     // Define quality gate based on the branch
                     if (branchName == 'main') {
                         qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
-                        echo "SonarQube Quality Gate Status: ${qualityGate}"
+                        echo "Applying : ${qualityGate} in SonarQube"
                     } else if (branchName.startsWith('feature')) {
                         qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
-                        echo "SonarQube Quality Gate Status: ${qualityGate}"
+                        echo "Applying : ${qualityGate} in SonarQube"
                     } else {
                         qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
+                        echo "Applying : ${qualityGate} in SonarQube"
                     }
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
@@ -91,7 +92,7 @@ pipeline {
                         // Groovy script to check the quality gate status from the JSON file
                         def sonarStatusJson = readFile('sonar_status.json')
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
-                        
+                        echo "SonarQube Response Json: ${sonarData}"
                         // Extract relevant information from the JSON
                         def sonarStatus = sonarData?.projectStatus?.status ?: 'Unknown'
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
