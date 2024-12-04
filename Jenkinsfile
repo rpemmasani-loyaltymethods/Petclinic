@@ -12,7 +12,7 @@ pipeline {
         SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
-        SonarToken = credentials('SonarToken')
+        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
@@ -50,14 +50,14 @@ pipeline {
                         echo "Applying : ${qualityGate} in SonarQube"
                     }
 
-                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         // SonarQube Analysis
                         sh """
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
                         -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
                         -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
-                        -Dsonar.login=${SonarToken} \
+                        -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600
                         """
                     }
@@ -84,10 +84,10 @@ pipeline {
                     // Define SonarQube project status API URL
                     def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${SONAR_PROJECT_KEY}"
 
-                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         // Fetch the quality gate status and write it to a file
                         sh """
-                            curl -s -u ${SonarToken}: ${sonarUrl} > sonar_status.json
+                            curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
                         """
                         // Groovy script to check the quality gate status from the JSON file
                         def sonarStatusJson = readFile('sonar_status.json')
