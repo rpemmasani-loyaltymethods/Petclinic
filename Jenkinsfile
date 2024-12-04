@@ -90,7 +90,6 @@ pipeline {
                         """
                         // Groovy script to check the quality gate status from the JSON file
                         def sonarStatusJson = readFile('sonar_status.json')
-                        echo "SonarQube Quality Gate Response: ${sonarStatusJson}"
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
                         
                         // Extract relevant information from the JSON
