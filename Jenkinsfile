@@ -1,5 +1,11 @@
 pipeline {
     agent any
+    
+    parameters {
+        // Parameter to specify the branch name, default is 'main'
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build')
+    }
+
     environment {
         SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         SONAR_PROJECT_KEY = 'Petclinic'
@@ -12,7 +18,8 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
+                // Dynamically use the branch name from the parameter
+                git branch: "${params.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
             }
         }
 
@@ -56,8 +63,8 @@ pipeline {
                         -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600
                         """
-
                     }
+
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         // Set quality gate via SonarQube API (with proper credentials and URL)
                         sh """
