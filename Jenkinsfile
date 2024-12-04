@@ -34,10 +34,11 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
-                    def qualityGate
-                    def gateId
+                    // def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    // echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
+                    // def qualityGate
+                    // def gateId
+                    def branchName = "${params.BRANCH_NAME}"
 
                     // Define quality gate based on the branch
                     if (branchName == 'main') {
@@ -92,9 +93,9 @@ pipeline {
                         sh """
                             curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
                         """
-                        echo "SonarQube Quality Gate Response: ${sonar_status.json}"                        
                         // Groovy script to check the quality gate status from the JSON file
                         def sonarStatusJson = readFile('sonar_status.json')
+                        echo "SonarQube Quality Gate Response: ${sonarStatusJson}"
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
                         
                         // Extract relevant information from the JSON
