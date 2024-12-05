@@ -4,8 +4,10 @@ pipeline {
     parameters {
         // Parameter to specify the branch name, default is 'main'
         string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build')
-		string(name: 'SONAR_PROJECT_KEY', description: 'unique identifier')
-		string(name: 'SONAR_PROJECT_NAME', description: 'name of the project')
+		string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier')
+		string(name: 'SONAR_PROJECT_NAME', description: 'Name of the project')
+		choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which qualitygate you wanted apply..')
+		choice(name: 'GATE_CHOICE', choices: ['select', 'set_as_default'], description: 'Applying qualitygate as select/default for project based on choice')
     }
 
     environment {
@@ -37,18 +39,21 @@ pipeline {
                     // def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                     // echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
                     def branchName = "${params.BRANCH_NAME}"
+					def qualityGate = "${params.QUALITY_GATE}"
 
                     // Define quality gate based on the branch
-                    if (branchName == 'main') {
-                        qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
-                        echo "Applying : ${qualityGate} in SonarQube"
-                    } else if (branchName.startsWith('feature')) {
-                        qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
-                        echo "Applying : ${qualityGate} in SonarQube"
-                    } else {
-                        qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
-                        echo "Applying : ${qualityGate} in SonarQube"
-                    }
+                    // if (branchName == 'main') {
+                    //     qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
+                    //     echo "Applying : ${qualityGate} in SonarQube"
+                    // } else if (branchName.startsWith('feature')) {
+                    //     qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
+                    //     echo "Applying : ${qualityGate} in SonarQube"
+                    // } else {
+                    //     qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
+                    //     echo "Applying : ${qualityGate} in SonarQube"
+                    // }
+					
+					
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         // SonarQube Analysis
@@ -62,14 +67,25 @@ pipeline {
                         """
                     }
 
+					
+
+					if (params.GATE_CHOICE == 'set_as_default') {
+						gatename = 'name' // Set name for setting as default
+						echo "Setting quality gate as default"
+					} else {
+						gatename = 'gateName' // Use 'gateName' for other cases
+						echo "Selecting quality gate: ${qualityGate}"
+					}
+
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         // Set quality gate via SonarQube API (with proper credentials and URL)
                         sh """
                         curl --header 'Authorization: Basic ${SonarToken}' \
-                        --location '${SONARQUBE_URL}api/qualitygates/set_as_default' \
-                        --data-urlencode "name=${qualityGate}"
+                        --location '${SONARQUBE_URL}api/qualitygates/${GATE_CHOICE}?projectKey=${SONAR_PROJECT_KEY}' \
+                        --data-urlencode '${gatename}=${qualityGate}'
                         """
                     }
+
 
                     // Sleep for 2 minutes after SonarQube analysis
                     echo 'Sleeping for 2 minutes after SonarQube analysis...'
