@@ -4,12 +4,12 @@ pipeline {
     parameters {
         // Parameter to specify the branch name, default is 'main'
         string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build')
+		string(name: 'SONAR_PROJECT_KEY', description: 'unique identifier')
+		string(name: 'SONAR_PROJECT_NAME', description: 'name of the project')
     }
 
     environment {
         SONARQUBE_SERVER = 'Sonarqube-8.9.2'
-        SONAR_PROJECT_KEY = 'Petclinic'
-        SONAR_PROJECT_NAME = 'Petclinic'
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
         SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
@@ -34,31 +34,28 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
-                    def qualityGate
-                    def gateId
+                    // def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    // echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
+                    def branchName = "${params.BRANCH_NAME}"
 
                     // Define quality gate based on the branch
                     if (branchName == 'main') {
                         qualityGate = 'Main-Quality-Gate'  // Quality gate for main branch
-                        echo "SonarQube Quality Gate Status: ${qualityGate}"
-                        gateId = 'AZNNLvaHpgzBmh7BHF2f'
-                    } else if (branchName.startsWith('feature/')) {
+                        echo "Applying : ${qualityGate} in SonarQube"
+                    } else if (branchName.startsWith('feature')) {
                         qualityGate = 'Feature-Quality-Gate' // Quality gate for feature branches
-                        echo "SonarQube Quality Gate Status: ${qualityGate}"
-                        gateId = 'AZNNK3BIpgzBmh7BHF2X'
+                        echo "Applying : ${qualityGate} in SonarQube"
                     } else {
                         qualityGate = 'Default-Quality-Gate' // Quality gate for other branches
-                        gateId = 'AZNxdEFapgzBmh7BHF5j'
+                        echo "Applying : ${qualityGate} in SonarQube"
                     }
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         // SonarQube Analysis
                         sh """
                         ${MAVEN_HOME}/bin/mvn sonar:sonar \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
                         -Dsonar.ws.timeout=600
@@ -69,7 +66,7 @@ pipeline {
                         // Set quality gate via SonarQube API (with proper credentials and URL)
                         sh """
                         curl --header 'Authorization: Basic ${SonarToken}' \
-                        --location 'https://sonarqube.devops.lmvi.net/api/qualitygates/set_as_default' \
+                        --location '${SONARQUBE_URL}api/qualitygates/set_as_default' \
                         --data-urlencode "name=${qualityGate}"
                         """
                     }
@@ -92,11 +89,10 @@ pipeline {
                         sh """
                             curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
                         """
-                        
                         // Groovy script to check the quality gate status from the JSON file
                         def sonarStatusJson = readFile('sonar_status.json')
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
-                        
+                        echo "SonarQube Response Json: ${sonarData}"
                         // Extract relevant information from the JSON
                         def sonarStatus = sonarData?.projectStatus?.status ?: 'Unknown'
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
@@ -124,4 +120,3 @@ pipeline {
         }
     }
 }
-
