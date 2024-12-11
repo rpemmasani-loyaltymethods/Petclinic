@@ -53,21 +53,12 @@ pipeline {
                     }
 
 					
-
-					// if (params.GATE_CHOICE == 'set_as_default') {
-					//	gatename = 'name' // Set name for setting as default
-				    //	echo "Setting quality gate as default"
-					// } else {
-					//	gatename = 'gateName' // Use 'gateName' for other cases
-					//	echo "Selecting quality gate: ${qualityGate}"
-					// }
-
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         // Set quality gate via SonarQube API (with proper credentials and URL)
                         sh """
                         curl --header 'Authorization: Basic ${SonarToken}' \
-                        --location '${SONARQUBE_URL}api/qualitygates/${GATE_CHOICE}?projectKey=${SONAR_PROJECT_KEY}' \
-                        --data-urlencode '${gatename}=${qualityGate}'
+                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}' \
+                        --data-urlencode 'gateName=${qualityGate}'
                         """
                     }
 
