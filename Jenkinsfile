@@ -1,12 +1,10 @@
 pipeline {
     agent any
-    
+
     parameters {
-        // Parameter to specify the branch name, default is 'main'
-        // string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build')
-		string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier')
-		string(name: 'SONAR_PROJECT_NAME', description: 'Name of the project')
-		choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which qualitygate you wanted apply..')
+        string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier')
+        string(name: 'SONAR_PROJECT_NAME', description: 'Name of the project')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
     }
 
     environment {
@@ -19,7 +17,6 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                // Dynamically use the branch name from the parameter
                 git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
                 echo "The branch name is: ${env.BRANCH_NAME}"
             }
@@ -37,7 +34,7 @@ pipeline {
             steps {
                 script {
                     // echo "SonarQube Quality env.BRANCH_NAME: ${branchName}"
-                    def branchName = "${env.BRANCH_NAME}"
+                    def branchName = "main"
 					def qualityGate = "${params.QUALITY_GATE}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
@@ -69,7 +66,6 @@ pipeline {
                 }
             }
         }
-
         stage('Quality Gate') {
             steps {
                 script {
@@ -98,8 +94,111 @@ pipeline {
                 }
             }
         }
-    }
+        stage('Fetch and Convert Metrics') {
+            steps {
+                script {
+                    def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
+                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
+                        sh """
+                        curl --location '${metricsUrl}' \
+                        --header 'Authorization: Basic ${SonarToken}' > metrics.json
+                        """
+                    }
+                    script {
+                        // Read the JSON data from metrics.json file
+                        def metricsJson = readFile('metrics.json')
 
+                        // Generate Python script dynamically to create the HTML report
+                        def pythonScript = """
+import json
+
+# Load the JSON data from the metrics.json file
+with open('metrics.json', 'r') as f:
+    data = json.load(f)
+
+# HTML content for the report
+html_content = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SonarQube Metrics Report</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2C3E50;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px auto;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f9f9f9;
+            color: #333;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>SonarQube Metrics Report</h1>
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+        </tr>
+'''
+
+# Iterate through JSON metrics and append to the table
+for measure in data['component']['measures']:
+    metric = measure.get('metric', 'N/A')
+    value = measure.get('value', 'N/A')
+    html_content += f'''
+        <tr>
+            <td>{metric}</td>
+            <td>{value}</td>
+        </tr>
+    '''
+
+html_content += '''
+    </table>
+</body>
+</html>
+'''
+
+# Write the final HTML report to the desired file path
+with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
+    f.write(html_content)
+"""
+    
+                        // Write the Python script dynamically to a file
+                        writeFile file: 'generate_report.py', text: pythonScript
+    
+                        // Run the Python script to generate the HTML report
+                        sh 'python3 generate_report.py'
+                        echo "HTML report successfully generated at /jenkins/workspace/archive/metrics_report.html"
+                    }                    
+                }
+            }
+        }
+    }
     post {
         success {
             echo 'Pipeline completed successfully.'
@@ -109,6 +208,18 @@ pipeline {
         }
         always {
             cleanWs()
+            script {
+                echo "Publishing Metrics Report..."
+                publishHTML([
+                    reportName: "SonarQube Metrics Report ${env.BUILD_NUMBER}",
+                    reportDir: '/jenkins/workspace/archive/',
+                    reportFiles: 'metrics_report.html',
+                    keepAll: true,
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true
+                ])
+            }
         }
     }
 }
+
