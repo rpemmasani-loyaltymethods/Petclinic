@@ -77,59 +77,43 @@ pipeline {
 
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
-                        // Generate JUnit XML
-                        def writer = new StringWriter()
-                        def xml = new groovy.xml.MarkupBuilder(writer)
-
-                        def failedConditions = conditions.findAll { it.status != 'OK' }
-                        def totalTests = conditions.size() + 1
-                        def failures = (sonarStatus != 'OK' ? 1 : 0) + failedConditions.size()
-
-                        xml.testsuite(name: 'SonarQubeQualityGate', tests: totalTests, failures: failures, errors: 0, skipped: 0) {
-                            testcase(classname: 'SonarQube', name: 'QualityGateStatus') {
-                                if (sonarStatus != 'OK') {
-                                    failure(message: "Quality Gate Failed", "Status: ${sonarStatus}")
-                                }
-                            }
-
-                            conditions.each { cond ->
-                                testcase(classname: 'SonarQube', name: cond.metricKey ?: 'unknown') {
-                                    if (cond.status != 'OK') {
-                                        failure(message: "Metric failed", "Metric: ${cond.metricKey}, Value: ${cond.actualValue}, Threshold: ${cond.errorThreshold}")
-                                    }
-                                }
-                            }
+                        // Build minimal JUnit-style XML manually
+                        def testCases = ""
+                        testCases += "<testcase classname='SonarQube' name='QualityGateStatus'>"
+                        if (sonarStatus != 'OK') {
+                            testCases += "<failure message='Quality Gate Failed'>Status: ${sonarStatus}</failure>"
                         }
-
-                        new File("target/surefire-reports").mkdirs()
-                        writeFile file: 'target/surefire-reports/sonartest.xml', text: writer.toString()
-
-                        // Generate HTML report
-                        def htmlContent = """\
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>SonarQube Quality Gate Report</title>
-<style>
-body { font-family: Arial; margin: 20px; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
-th { background-color: #f4f4f4; }
-tr.failed { background-color: #fdd; }
-tr.ok { background-color: #dfd; }
-</style></head><body>
-<h1>SonarQube Quality Gate Report</h1>
-<p><strong>Project Key:</strong> ${params.SONAR_PROJECT_KEY}</p>
-<p><strong>Status:</strong> <span style="color:${sonarStatus == 'OK' ? 'green' : 'red'}">${sonarStatus}</span></p>
-<table><thead><tr><th>Metric</th><th>Status</th><th>Actual</th><th>Threshold</th><th>Comparator</th></tr></thead><tbody>
-"""
+                        testCases += "</testcase>"
 
                         conditions.each { cond ->
-                            def rowClass = cond.status == 'OK' ? 'ok' : 'failed'
-                            htmlContent += "<tr class='${rowClass}'><td>${cond.metricKey}</td><td>${cond.status}</td><td>${cond.actualValue}</td><td>${cond.errorThreshold}</td><td>${cond.comparator}</td></tr>\n"
+                            def failed = cond.status != 'OK'
+                            testCases += "<testcase classname='SonarQube' name='${cond.metricKey}'>"
+                            if (failed) {
+                                testCases += "<failure message='Metric failed'>Metric: ${cond.metricKey}, Value: ${cond.actualValue}, Threshold: ${cond.errorThreshold}</failure>"
+                            }
+                            testCases += "</testcase>"
                         }
 
-                        htmlContent += "</tbody></table></body></html>"
+                        def junitXml = """<?xml version='1.0' encoding='UTF-8'?>
+        <testsuite name='SonarQubeQualityGate' tests='${conditions.size() + 1}' failures='${conditions.count { it.status != 'OK' } + (sonarStatus != 'OK' ? 1 : 0)}' errors='0' skipped='0'>
+        ${testCases}
+        </testsuite>
+        """
+                        new File("target/surefire-reports").mkdirs()
+                        writeFile file: 'target/surefire-reports/sonartest.xml', text: junitXml
 
-                        new File('archive').mkdirs()
+                        // HTML report block stays same
+                        def htmlContent = """<!DOCTYPE html><html><head><title>SonarQube Quality Gate Report</title>
+        <style>body{font-family:Arial;}table{width:100%;border-collapse:collapse;}th,td{padding:8px;border:1px solid #ccc;text-align:left;}th{background:#f4f4f4;}</style>
+        </head><body><h1>SonarQube Quality Gate Report</h1><p><strong>Status:</strong> ${sonarStatus}</p><table><tr><th>Metric</th><th>Status</th><th>Actual</th><th>Threshold</th><th>Comparator</th></tr>
+        """
+                        conditions.each { cond ->
+                            def rowColor = cond.status == 'OK' ? '#dfd' : '#fdd'
+                            htmlContent += "<tr style='background:${rowColor}'><td>${cond.metricKey}</td><td>${cond.status}</td><td>${cond.actualValue}</td><td>${cond.errorThreshold}</td><td>${cond.comparator}</td></tr>"
+                        }
+                        htmlContent += "</table></body></html>"
+
+                        new File("archive").mkdirs()
                         writeFile file: 'archive/sonar_quality_gate_report.html', text: htmlContent
 
                         if (sonarStatus != 'OK') {
