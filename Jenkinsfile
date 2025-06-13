@@ -4,7 +4,7 @@ pipeline {
     parameters {
         string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier')
         string(name: 'SONAR_PROJECT_NAME', description: 'Name of the project')
-        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Quality gate to apply')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
     }
 
     environment {
@@ -18,13 +18,15 @@ pipeline {
         stage('Git Checkout') {
             steps {
                 git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
-                echo "Branch: ${env.BRANCH_NAME}"
+                echo "The branch name is: ${env.BRANCH_NAME}"
             }
         }
 
         stage('Build & Test') {
             steps {
-                sh "${MAVEN_HOME}/bin/mvn clean install"
+                script {
+                    sh "${MAVEN_HOME}/bin/mvn clean install"
+                }
             }
         }
 
@@ -35,72 +37,50 @@ pipeline {
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                            ${MAVEN_HOME}/bin/mvn sonar:sonar \
-                            -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
-                            -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
-                            -Dsonar.host.url=${SONARQUBE_URL} \
-                            -Dsonar.login=${SONARQUBE_TOKEN} \
-                            -Dsonar.ws.timeout=600
+                        ${MAVEN_HOME}/bin/mvn sonar:sonar \
+                        -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
+                        -Dsonar.host.url=${SONARQUBE_URL} \
+                        -Dsonar.login=${SONARQUBE_TOKEN} \
+                        -Dsonar.ws.timeout=600
                         """
                     }
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
-                            curl -s --header 'Authorization: Basic ${SonarToken}' \
-                            --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
-                            --data-urlencode 'gateName=${qualityGate}'
+                        curl --header 'Authorization: Basic ${SonarToken}'  \
+                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
+                        --data-urlencode 'gateName=${qualityGate}'
                         """
                     }
 
-                    echo 'Sleeping 2 minutes to wait for SonarQube Quality Gate result...'
+                    echo 'Sleeping for 2 minutes after SonarQube analysis...'
                     sleep(time: 2, unit: 'MINUTES')
                 }
             }
         }
 
-        stage('Check Quality Gate') {
+        stage('Quality Gate') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    script {
-                        def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
-                        withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
-                            sh "curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json"
-                        }
+                script {
+                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
+
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        sh """
+                            curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
+                        """
                         def sonarStatusJson = readFile('sonar_status.json')
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
-                        def status = sonarData?.projectStatus?.status ?: 'Unknown'
-                        echo "SonarQube Quality Gate Status: ${status}"
+                        echo "SonarQube Response Json: ${sonarData}"
+                        def sonarStatus = sonarData?.projectStatus?.status ?: 'Unknown'
+                        echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
-                        if (status != 'OK') {
-                            error "Quality Gate Failed! Status: ${status}"
+                        if (sonarStatus != 'OK') {
+                            currentBuild.result = 'UNSTABLE'
+                            echo "Quality Gate failed, but continuing pipeline. Status: ${sonarStatus}"
                         }
                     }
                 }
-            }
-        }
-
-        stage('Publish Test Results') {
-            steps {
-                sh 'mkdir -p target/surefire-reports' // Ensure dir exists
-                junit 'target/surefire-reports/*.xml'
-            }
-        }
-
-        stage('Publish Code Coverage') {
-            steps {
-                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java', exclusionPattern: ''
-            }
-        }
-
-        stage('Publish Checkstyle Report') {
-            steps {
-                recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
-            }
-        }
-
-        stage('Debug Workspace') {
-            steps {
-                sh 'pwd && ls -lR'
             }
         }
 
@@ -110,63 +90,84 @@ pipeline {
                     def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
-                            curl -s --location '${metricsUrl}' \
-                            --header 'Authorization: Basic ${SonarToken}' > metrics.json
+                        curl --location '${metricsUrl}' \
+                        --header 'Authorization: Basic ${SonarToken}' > metrics.json
                         """
                     }
 
-                    def metricsJson = readFile('metrics.json')
-                    def parsed = new groovy.json.JsonSlurper().parseText(metricsJson)
-                    def tableRows = parsed.component.measures.collect {
-                        "<tr><td>${it.metric}</td><td>${it.value}</td></tr>"
-                    }.join("\n")
+                    writeFile file: 'generate_report.py', text: """
+import json
 
-                    def htmlContent = """
+with open('metrics.json', 'r') as f:
+    data = json.load(f)
+
+html_content = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>SonarQube Metrics Report</title>
     <style>
-        body { font-family: Arial; margin: 20px; color: #333; }
-        h1 { color: #2C3E50; }
-        table { border-collapse: collapse; width: 100%; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background: #f2f2f2; }
-        tr:nth-child(even) { background: #f9f9f9; }
+        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; color: #333; }
+        h1 { color: #2C3E50; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin: 20px auto; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f9f9f9; color: #333; font-weight: bold; text-transform: uppercase; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tr:hover { background-color: #f1f1f1; }
     </style>
 </head>
 <body>
     <h1>SonarQube Metrics Report</h1>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        ${tableRows}
+'''
+
+for measure in data['component']['measures']:
+    metric = measure.get('metric', 'N/A')
+    value = measure.get('value', 'N/A')
+    html_content += f"<tr><td>{metric}</td><td>{value}</td></tr>"
+
+html_content += '''
     </table>
 </body>
 </html>
-"""
-                    writeFile file: 'metrics_report.html', text: htmlContent
+'''
+
+with open('metrics_report.html', 'w') as f:
+    f.write(html_content)
+                    """
+                    sh 'python3 generate_report.py'
+                    echo "HTML report successfully generated: metrics_report.html"
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline completed successfully.'
-        }
-        failure {
-            echo 'Pipeline failed.'
-        }
         always {
-            cleanWs()
+            echo 'Publishing Reports...'
             publishHTML([
                 reportName: "SonarQube Metrics Report",
-                reportDir: '.', // current workspace
+                reportDir: '.',
                 reportFiles: 'metrics_report.html',
                 keepAll: true,
                 allowMissing: false,
                 alwaysLinkToLastBuild: true
             ])
+
+            junit 'target/surefire-reports/*.xml'
+
+            recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
+
+            jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'
+        }
+
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
