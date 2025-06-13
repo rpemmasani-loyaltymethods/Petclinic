@@ -50,7 +50,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
                         curl --header 'Authorization: Basic ${SonarToken}'  \
-                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}' \
+                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
                         --data-urlencode 'gateName=${qualityGate}'
                         """
                     }
@@ -64,7 +64,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 script {
-                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${SONAR_PROJECT_KEY}"
+                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
@@ -72,12 +72,67 @@ pipeline {
                         """
                         def sonarStatusJson = readFile('sonar_status.json')
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
-                        echo "SonarQube Response Json: ${sonarData}"
                         def sonarStatus = sonarData?.projectStatus?.status ?: 'Unknown'
+                        def conditions = sonarData?.projectStatus?.conditions ?: []
+
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
+                        // Generate JUnit XML
+                        def writer = new StringWriter()
+                        def xml = new groovy.xml.MarkupBuilder(writer)
+
+                        def failedConditions = conditions.findAll { it.status != 'OK' }
+                        def totalTests = conditions.size() + 1
+                        def failures = (sonarStatus != 'OK' ? 1 : 0) + failedConditions.size()
+
+                        xml.testsuite(name: 'SonarQubeQualityGate', tests: totalTests, failures: failures, errors: 0, skipped: 0) {
+                            testcase(classname: 'SonarQube', name: 'QualityGateStatus') {
+                                if (sonarStatus != 'OK') {
+                                    failure(message: "Quality Gate Failed", "Status: ${sonarStatus}")
+                                }
+                            }
+
+                            conditions.each { cond ->
+                                testcase(classname: 'SonarQube', name: cond.metricKey ?: 'unknown') {
+                                    if (cond.status != 'OK') {
+                                        failure(message: "Metric failed", "Metric: ${cond.metricKey}, Value: ${cond.actualValue}, Threshold: ${cond.errorThreshold}")
+                                    }
+                                }
+                            }
+                        }
+
+                        new File("target/surefire-reports").mkdirs()
+                        writeFile file: 'target/surefire-reports/sonartest.xml', text: writer.toString()
+
+                        // Generate HTML report
+                        def htmlContent = """\
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>SonarQube Quality Gate Report</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+th { background-color: #f4f4f4; }
+tr.failed { background-color: #fdd; }
+tr.ok { background-color: #dfd; }
+</style></head><body>
+<h1>SonarQube Quality Gate Report</h1>
+<p><strong>Project Key:</strong> ${params.SONAR_PROJECT_KEY}</p>
+<p><strong>Status:</strong> <span style="color:${sonarStatus == 'OK' ? 'green' : 'red'}">${sonarStatus}</span></p>
+<table><thead><tr><th>Metric</th><th>Status</th><th>Actual</th><th>Threshold</th><th>Comparator</th></tr></thead><tbody>
+"""
+
+                        conditions.each { cond ->
+                            def rowClass = cond.status == 'OK' ? 'ok' : 'failed'
+                            htmlContent += "<tr class='${rowClass}'><td>${cond.metricKey}</td><td>${cond.status}</td><td>${cond.actualValue}</td><td>${cond.errorThreshold}</td><td>${cond.comparator}</td></tr>\n"
+                        }
+
+                        htmlContent += "</tbody></table></body></html>"
+
+                        new File('archive').mkdirs()
+                        writeFile file: 'archive/sonar_quality_gate_report.html', text: htmlContent
+
                         if (sonarStatus != 'OK') {
-                            echo "Quality Gate failed! SonarQube status: ${sonarStatus}"
                             currentBuild.result = 'FAILURE'
                             error "Quality Gate Failed!"
                         }
@@ -85,8 +140,6 @@ pipeline {
                 }
             }
         }
-
-        // === Jenkins-Native Publishing Stages ===
 
         stage('Publish Test Results') {
             steps {
@@ -96,19 +149,15 @@ pipeline {
 
         stage('Publish Code Coverage') {
             steps {
-                // JaCoCo plugin must be installed in Jenkins
-                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java', exclusionPattern: ''
+                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'
             }
         }
 
         stage('Publish Checkstyle Report') {
             steps {
-                // Warnings Next Generation plugin must be installed in Jenkins
                 recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
             }
         }
-
-        // === Custom SonarQube Metrics HTML Report (as before) ===
 
         stage('Fetch and Convert Metrics') {
             steps {
@@ -120,62 +169,18 @@ pipeline {
                         --header 'Authorization: Basic ${SonarToken}' > metrics.json
                         """
                     }
-                    script {
-                        def metricsJson = readFile('metrics.json')
 
-                        def pythonScript = """
-import json
-
-with open('metrics.json', 'r') as f:
-    data = json.load(f)
-
-html_content = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>SonarQube Metrics Report</title>
-    <style>
-        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; color: #333; }
-        h1 { color: #2C3E50; text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin: 20px auto; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f9f9f9; color: #333; font-weight: bold; text-transform: uppercase; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        tr:hover { background-color: #f1f1f1; }
-    </style>
-</head>
-<body>
-    <h1>SonarQube Metrics Report</h1>
-    <table>
-        <tr>
-            <th>Metric</th>
-            <th>Value</th>
-        </tr>
-'''
-
-for measure in data['component']['measures']:
-    metric = measure.get('metric', 'N/A')
-    value = measure.get('value', 'N/A')
-    html_content += f'''
-        <tr>
-            <td>{metric}</td>
-            <td>{value}</td>
-        </tr>
-    '''
-
-html_content += '''
-    </table>
-</body>
-</html>
-'''
-
-with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
-    f.write(html_content)
+                    def metricsJson = readJSON file: 'metrics.json'
+                    def htmlContent = """<!DOCTYPE html><html><head><title>SonarQube Metrics Report</title>
+<style>body{font-family:Arial;}table{width:100%;border-collapse:collapse;}th,td{padding:8px;border:1px solid #ccc;text-align:left;}th{background:#f4f4f4;}</style>
+</head><body><h1>SonarQube Metrics Report</h1><table><tr><th>Metric</th><th>Value</th></tr>
 """
-                        writeFile file: 'generate_report.py', text: pythonScript
-                        sh 'python3 generate_report.py'
-                        echo "HTML report successfully generated at /jenkins/workspace/archive/metrics_report.html"
+                    metricsJson.component.measures.each {
+                        htmlContent += "<tr><td>${it.metric}</td><td>${it.value}</td></tr>\n"
                     }
+                    htmlContent += "</table></body></html>"
+                    new File("archive").mkdirs()
+                    writeFile file: 'archive/metrics_report.html', text: htmlContent
                 }
             }
         }
@@ -191,11 +196,19 @@ with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
         always {
             cleanWs()
             script {
-                echo "Publishing Metrics Report..."
                 publishHTML([
                     reportName: "SonarQube Metrics Report ${env.BUILD_NUMBER}",
-                    reportDir: '/jenkins/workspace/archive/',
+                    reportDir: 'archive',
                     reportFiles: 'metrics_report.html',
+                    keepAll: true,
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true
+                ])
+
+                publishHTML([
+                    reportName: "SonarQube Quality Gate Report",
+                    reportDir: 'archive',
+                    reportFiles: 'sonar_quality_gate_report.html',
                     keepAll: true,
                     allowMissing: false,
                     alwaysLinkToLastBuild: true
