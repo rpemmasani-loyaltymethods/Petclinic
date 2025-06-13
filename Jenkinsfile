@@ -4,7 +4,7 @@ pipeline {
     parameters {
         string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier')
         string(name: 'SONAR_PROJECT_NAME', description: 'Name of the project')
-        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Quality gate to apply.')
     }
 
     environment {
@@ -25,7 +25,7 @@ pipeline {
         stage('Build & Test') {
             steps {
                 script {
-                    sh "${MAVEN_HOME}/bin/mvn clean install"
+                    sh "${MAVEN_HOME}/bin/mvn clean install -X"
                 }
             }
         }
@@ -33,25 +33,26 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
+                    def branchName = "main"
                     def qualityGate = "${params.QUALITY_GATE}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                        ${MAVEN_HOME}/bin/mvn sonar:sonar \
-                        -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
-                        -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
-                        -Dsonar.host.url=${SONARQUBE_URL} \
-                        -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.ws.timeout=600
+                            ${MAVEN_HOME}/bin/mvn sonar:sonar \
+                            -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
+                            -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
+                            -Dsonar.host.url=${SONARQUBE_URL} \
+                            -Dsonar.login=${SONARQUBE_TOKEN} \
+                            -Dsonar.ws.timeout=600
                         """
                     }
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
-                        sh """
-                        curl --header 'Authorization: Basic ${SonarToken}'  \
-                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
-                        --data-urlencode 'gateName=${qualityGate}'
-                        """
+                        sh '''
+                            curl --header "Authorization: Basic $SonarToken" \
+                            --location "$SONARQUBE_URL/api/qualitygates/select?projectKey=$SONAR_PROJECT_KEY" \
+                            --data-urlencode "gateName='${params.QUALITY_GATE}'"
+                        '''
                     }
 
                     echo 'Sleeping for 2 minutes after SonarQube analysis...'
@@ -63,7 +64,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 script {
-                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
+                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${SONAR_PROJECT_KEY}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
@@ -76,11 +77,28 @@ pipeline {
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
                         if (sonarStatus != 'OK') {
-                            currentBuild.result = 'UNSTABLE'
-                            echo "Quality Gate failed, but continuing pipeline. Status: ${sonarStatus}"
+                            error "Quality Gate Failed!"
                         }
                     }
                 }
+            }
+        }
+
+        stage('Publish Test Results') {
+            steps {
+                junit 'target/surefire-reports/*.xml'
+            }
+        }
+
+        stage('Publish Code Coverage') {
+            steps {
+                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java', exclusionPattern: ''
+            }
+        }
+
+        stage('Publish Checkstyle Report') {
+            steps {
+                recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
             }
         }
 
@@ -89,13 +107,19 @@ pipeline {
                 script {
                     def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
-                        sh """
-                        curl --location '${metricsUrl}' \
-                        --header 'Authorization: Basic ${SonarToken}' > metrics.json
-                        """
+                        env.METRICS_URL = metricsUrl
+                        sh '''
+                            curl --location "$METRICS_URL" \
+                            --header "Authorization: Basic $SonarToken" > metrics.json
+                        '''
                     }
 
-                    writeFile file: 'generate_report.py', text: """
+                    def metricsRaw = readFile('metrics.json')
+                    if (!metricsRaw?.trim()) {
+                        error "SonarQube metrics.json is empty. Possible API failure or authentication issue."
+                    }
+
+                    def pythonScript = """
 import json
 
 with open('metrics.json', 'r') as f:
@@ -119,7 +143,10 @@ html_content = '''
 <body>
     <h1>SonarQube Metrics Report</h1>
     <table>
-        <tr><th>Metric</th><th>Value</th></tr>
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+        </tr>
 '''
 
 for measure in data['component']['measures']:
@@ -133,41 +160,37 @@ html_content += '''
 </html>
 '''
 
-with open('metrics_report.html', 'w') as f:
+with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
     f.write(html_content)
-                    """
+"""
+                    writeFile file: 'generate_report.py', text: pythonScript
                     sh 'python3 generate_report.py'
-                    echo "HTML report successfully generated: metrics_report.html"
+                    echo "HTML report successfully generated at /jenkins/workspace/archive/metrics_report.html"
                 }
             }
         }
     }
 
     post {
-        always {
-            echo 'Publishing Reports...'
-            publishHTML([
-                reportName: "SonarQube Metrics Report",
-                reportDir: '.',
-                reportFiles: 'metrics_report.html',
-                keepAll: true,
-                allowMissing: false,
-                alwaysLinkToLastBuild: true
-            ])
-
-            junit 'target/surefire-reports/*.xml'
-
-            recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
-
-            jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'
-        }
-
         success {
             echo 'Pipeline completed successfully.'
         }
-
         failure {
             echo 'Pipeline failed.'
+        }
+        always {
+            cleanWs()
+            script {
+                echo "Publishing Reports..."
+                publishHTML([
+                    reportName: "SonarQube Metrics Report ${env.BUILD_NUMBER}",
+                    reportDir: '/jenkins/workspace/archive/',
+                    reportFiles: 'metrics_report.html',
+                    keepAll: true,
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true
+                ])
+            }
         }
     }
 }
