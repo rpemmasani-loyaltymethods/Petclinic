@@ -50,7 +50,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
                         curl --header 'Authorization: Basic ${SonarToken}'  \
-                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
+                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}' \
                         --data-urlencode 'gateName=${qualityGate}'
                         """
                     }
@@ -77,7 +77,6 @@ pipeline {
 
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
-                        // Build minimal JUnit-style XML manually
                         def testCases = ""
                         testCases += "<testcase classname='SonarQube' name='QualityGateStatus'>"
                         if (sonarStatus != 'OK') {
@@ -95,25 +94,24 @@ pipeline {
                         }
 
                         def junitXml = """<?xml version='1.0' encoding='UTF-8'?>
-        <testsuite name='SonarQubeQualityGate' tests='${conditions.size() + 1}' failures='${conditions.count { it.status != 'OK' } + (sonarStatus != 'OK' ? 1 : 0)}' errors='0' skipped='0'>
-        ${testCases}
-        </testsuite>
-        """
-                        new File("target/surefire-reports").mkdirs()
+<testsuite name='SonarQubeQualityGate' tests='${conditions.size() + 1}' failures='${conditions.count { it.status != 'OK' } + (sonarStatus != 'OK' ? 1 : 0)}' errors='0' skipped='0'>
+${testCases}
+</testsuite>
+"""
+                        sh 'mkdir -p target/surefire-reports'
                         writeFile file: 'target/surefire-reports/sonartest.xml', text: junitXml
 
-                        // HTML report block stays same
                         def htmlContent = """<!DOCTYPE html><html><head><title>SonarQube Quality Gate Report</title>
-        <style>body{font-family:Arial;}table{width:100%;border-collapse:collapse;}th,td{padding:8px;border:1px solid #ccc;text-align:left;}th{background:#f4f4f4;}</style>
-        </head><body><h1>SonarQube Quality Gate Report</h1><p><strong>Status:</strong> ${sonarStatus}</p><table><tr><th>Metric</th><th>Status</th><th>Actual</th><th>Threshold</th><th>Comparator</th></tr>
-        """
+<style>body{font-family:Arial;}table{width:100%;border-collapse:collapse;}th,td{padding:8px;border:1px solid #ccc;text-align:left;}th{background:#f4f4f4;}</style>
+</head><body><h1>SonarQube Quality Gate Report</h1><p><strong>Status:</strong> ${sonarStatus}</p><table><tr><th>Metric</th><th>Status</th><th>Actual</th><th>Threshold</th><th>Comparator</th></tr>
+"""
                         conditions.each { cond ->
                             def rowColor = cond.status == 'OK' ? '#dfd' : '#fdd'
                             htmlContent += "<tr style='background:${rowColor}'><td>${cond.metricKey}</td><td>${cond.status}</td><td>${cond.actualValue}</td><td>${cond.errorThreshold}</td><td>${cond.comparator}</td></tr>"
                         }
                         htmlContent += "</table></body></html>"
 
-                        new File("archive").mkdirs()
+                        sh 'mkdir -p archive'
                         writeFile file: 'archive/sonar_quality_gate_report.html', text: htmlContent
 
                         if (sonarStatus != 'OK') {
@@ -133,39 +131,13 @@ pipeline {
 
         stage('Publish Code Coverage') {
             steps {
-                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'
+                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java', exclusionPattern: ''
             }
         }
 
         stage('Publish Checkstyle Report') {
             steps {
                 recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
-            }
-        }
-
-        stage('Fetch and Convert Metrics') {
-            steps {
-                script {
-                    def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
-                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
-                        sh """
-                        curl --location '${metricsUrl}' \
-                        --header 'Authorization: Basic ${SonarToken}' > metrics.json
-                        """
-                    }
-
-                    def metricsJson = readJSON file: 'metrics.json'
-                    def htmlContent = """<!DOCTYPE html><html><head><title>SonarQube Metrics Report</title>
-<style>body{font-family:Arial;}table{width:100%;border-collapse:collapse;}th,td{padding:8px;border:1px solid #ccc;text-align:left;}th{background:#f4f4f4;}</style>
-</head><body><h1>SonarQube Metrics Report</h1><table><tr><th>Metric</th><th>Value</th></tr>
-"""
-                    metricsJson.component.measures.each {
-                        htmlContent += "<tr><td>${it.metric}</td><td>${it.value}</td></tr>\n"
-                    }
-                    htmlContent += "</table></body></html>"
-                    new File("archive").mkdirs()
-                    writeFile file: 'archive/metrics_report.html', text: htmlContent
-                }
             }
         }
     }
@@ -180,17 +152,9 @@ pipeline {
         always {
             cleanWs()
             script {
+                echo "Publishing Metrics Report..."
                 publishHTML([
                     reportName: "SonarQube Metrics Report ${env.BUILD_NUMBER}",
-                    reportDir: 'archive',
-                    reportFiles: 'metrics_report.html',
-                    keepAll: true,
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true
-                ])
-
-                publishHTML([
-                    reportName: "SonarQube Quality Gate Report",
                     reportDir: 'archive',
                     reportFiles: 'sonar_quality_gate_report.html',
                     keepAll: true,
