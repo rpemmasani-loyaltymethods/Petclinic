@@ -48,11 +48,11 @@ pipeline {
                     }
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
-                        sh '''
-                            curl --header "Authorization: Basic $SonarToken" \
-                            --location "$SONARQUBE_URL/api/qualitygates/select?projectKey=$SONAR_PROJECT_KEY" \
-                            --data-urlencode "gateName='${params.QUALITY_GATE}'"
-                        '''
+                        sh """
+                        curl --header "Authorization: Basic ${SonarToken}"  \
+                        --location "${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}" \
+                        --data-urlencode "gateName=${params.QUALITY_GATE}"
+                        """
                     }
 
                     echo 'Sleeping for 2 minutes after SonarQube analysis...'
