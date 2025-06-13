@@ -43,13 +43,14 @@ pipeline {
                         -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
                         -Dsonar.host.url=${SONARQUBE_URL} \
                         -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.ws.timeout=600
+                        -Dsonar.ws.timeout=600 \
+                        -Djavax.net.ssl.trustStoreType=Windows-ROOT # Not recommended for production, need to renew the certificate 
                         """
                     }
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
-                        curl --header 'Authorization: Basic ${SonarToken}' \
+                        curl -k --header 'Authorization: Basic ${SonarToken}'  \
                         --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}' \
                         --data-urlencode 'gateName=${qualityGate}'
                         """
@@ -68,7 +69,7 @@ pipeline {
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                            curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
+                            curl -k -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
                         """
                         def sonarStatusJson = readFile('sonar_status.json')
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
