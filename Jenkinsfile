@@ -4,7 +4,7 @@ pipeline {
     parameters {
         string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
         string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic', description: 'SonarQube Project Name')
-        string(name: 'QUALITY_GATE', defaultValue: 'Default', description: 'SonarQube Quality Gate Name')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
     }
 
     environment {
