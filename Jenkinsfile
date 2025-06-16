@@ -3,6 +3,8 @@ pipeline {
 
     parameters {
         string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
+        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic', description: 'SonarQube Project Name')
+        string(name: 'QUALITY_GATE', defaultValue: 'Default', description: 'SonarQube Quality Gate Name')
     }
 
     environment {
@@ -22,14 +24,16 @@ pipeline {
                     def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
                     def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells"
 
-                    // Fetch responses and save to files
-                    sh """
-                        curl -s '${qualityGateURL}' -o sonar_quality.json
-                        curl -s '${metricsURL}' -o sonar_metrics.json
-                    """
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        sh """
+                            mkdir -p archive
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
+                        """
+                    }
 
-                    // Generate HTML report
-                    sh 'python3 generate_report.py'
+                    echo "🐍 Running generate_report.py"
+                    sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
                 }
             }
         }

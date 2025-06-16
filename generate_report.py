@@ -1,43 +1,121 @@
 import json
 import os
 
-# Load data
+quality_path = 'archive/sonar_quality.json'
+metrics_path = 'archive/sonar_metrics.json'
+output_path = 'archive/metrics_report.html'
+
 try:
-    with open("sonar_quality.json") as f:
+    with open(quality_path, 'r') as f:
         quality_data = json.load(f)
 
-    with open("sonar_metrics.json") as f:
+    with open(metrics_path, 'r') as f:
         metrics_data = json.load(f)
+
 except Exception as e:
-    print("[ERROR] Failed to load JSON files:", str(e))
+    print(f"[ERROR] Failed to load JSON files: {e}")
     exit(1)
 
-# Prepare output directory
-output_dir = "archive"
-os.makedirs(output_dir, exist_ok=True)
-
-# Extract quality gate data
-status = quality_data.get("projectStatus", {}).get("status", "UNKNOWN")
-conditions = quality_data.get("projectStatus", {}).get("conditions", [])
+# Extract quality gate status
+project_status = quality_data.get('projectStatus', {})
+quality_gate_status = project_status.get('status', 'Unknown')
+conditions = project_status.get('conditions', [])
 
 # Extract metrics
-measures = metrics_data.get("component", {}).get("measures", [])
+component = metrics_data.get('component', {})
+measures = component.get('measures', [])
 
-# Generate HTML report
-with open(f"{output_dir}/metrics_report.html", "w") as f:
-    f.write("<html><head><title>SonarQube Report</title></head><body>")
-    f.write(f"<h1>Quality Gate Status: {status}</h1>")
-    f.write("<table border='1'><tr><th>Metric</th><th>Actual Value</th><th>Status</th><th>Error Threshold</th></tr>")
-    for c in conditions:
-        f.write(f"<tr><td>{c.get('metricKey')}</td><td>{c.get('actualValue')}</td><td>{c.get('status')}</td><td>{c.get('errorThreshold')}</td></tr>")
-    f.write("</table><hr>")
+metric_map = {m['metric']: m['value'] for m in measures}
 
-    f.write("<h2>Metrics Overview</h2>")
-    for m in measures:
-        metric = m.get("metric")
-        value = m.get("value", "N/A")
-        percent = int(float(value)) if value.replace('.', '', 1).isdigit() else 0
-        f.write(f"<div><strong>{metric.capitalize()}</strong>: {value}%<br>")
-        f.write(f"<div style='width: 300px; background-color: red;'><div style='width: {percent}%; background-color: green; color: white;'>{percent}%</div></div></div><br>")
+# Create HTML
+html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SonarQube Metrics Dashboard</title>
+    <style>
+        body {{
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+        }}
+        .sidebar {{
+            width: 250px;
+            background-color: #0d47a1;
+            height: 100vh;
+            position: fixed;
+            padding: 30px 20px;
+            color: white;
+        }}
+        .sidebar h2 {{
+            color: #fff;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }}
+        .sidebar .metric {{
+            margin-bottom: 15px;
+        }}
+        .sidebar .metric span {{
+            display: block;
+            font-size: 14px;
+            color: #bbdefb;
+        }}
+        .sidebar .metric .value {{
+            font-size: 18px;
+            color: #ffffff;
+            font-weight: bold;
+        }}
+        .main {{
+            margin-left: 270px;
+            padding: 30px;
+        }}
+        .status {{
+            font-size: 20px;
+            font-weight: bold;
+            color: {'green' if quality_gate_status == 'OK' else 'red'};
+        }}
+        .condition {{
+            margin-bottom: 10px;
+            font-size: 15px;
+        }}
+    </style>
+</head>
+<body>
 
-    f.write("</body></html>")
+<div class="sidebar">
+    <h2>SonarQube Metrics</h2>
+    <div class="metric"><span>Lines of Code</span><div class="value">{metric_map.get('ncloc', 'N/A')}</div></div>
+    <div class="metric"><span>Complexity</span><div class="value">{metric_map.get('complexity', 'N/A')}</div></div>
+    <div class="metric"><span>Violations</span><div class="value">{metric_map.get('violations', 'N/A')}</div></div>
+    <div class="metric"><span>Coverage</span><div class="value">{metric_map.get('coverage', 'N/A')}%</div></div>
+    <div class="metric"><span>Code Smells</span><div class="value">{metric_map.get('code_smells', 'N/A')}</div></div>
+</div>
+
+<div class="main">
+    <h1>SonarQube Quality Gate Report</h1>
+    <p class="status">Quality Gate Status: {quality_gate_status}</p>
+    <hr />
+    <h3>Conditions:</h3>
+"""
+
+# Append condition info
+for cond in conditions:
+    html += f"""
+    <div class="condition">
+        <b>{cond.get('metricKey')}</b>: {cond.get('status')} (Actual: {cond.get('actualValue')}, Threshold: {cond.get('errorThreshold')})
+    </div>
+    """
+
+html += """
+</div>
+</body>
+</html>
+"""
+
+# Write report
+with open(output_path, 'w') as f:
+    f.write(html)
+
+print(f"✅ HTML report generated at {output_path}")
