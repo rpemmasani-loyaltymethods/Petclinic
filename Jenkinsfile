@@ -1,10 +1,14 @@
-
 pipeline {
     agent any
-    environment {
-        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net"
-        PROJECT_KEY = "Petclinic"
+
+    parameters {
+        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
     }
+
+    environment {
+        SONARQUBE_URL = 'https://sonarqube.devops.lmvi.net'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -12,24 +16,39 @@ pipeline {
             }
         }
 
-        stage('Fetch SonarQube Metrics') {
+        stage('Fetch SonarQube Quality Gate and Metrics') {
             steps {
                 script {
-                    def qualityGateUrl = "${SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${PROJECT_KEY}"
-                    def metricsUrl = "${SONARQUBE_URL}/api/measures/component?component=${PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,duplicated_lines_density"
+                    def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
+                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells"
 
-                    sh "curl -s '${qualityGateUrl}' -o sonarqube_quality_gate.json"
-                    sh "curl -s '${metricsUrl}' -o sonarqube_metrics.json"
+                    // Fetch responses and save to files
+                    sh """
+                        curl -s '${qualityGateURL}' -o sonar_quality.json
+                        curl -s '${metricsURL}' -o sonar_metrics.json
+                    """
+
+                    // Generate HTML report
+                    sh 'python3 generate_report.py'
                 }
             }
         }
 
-        stage('Generate HTML Report') {
+        stage('Publish HTML Report') {
             steps {
                 script {
-                    sh "mkdir -p archive"
-                    writeFile file: 'generate_report.py', text: '''${generate_report_py}'''
-                    sh 'python3 generate_report.py'
+                    if (fileExists('archive/metrics_report.html')) {
+                        publishHTML(target: [
+                            reportDir: 'archive',
+                            reportFiles: 'metrics_report.html',
+                            reportName: 'SonarQube Metrics Report',
+                            keepAll: true,
+                            alwaysLinkToLastBuild: true,
+                            allowMissing: false
+                        ])
+                    } else {
+                        echo "⚠️ Skipping publishHTML — metrics_report.html not found."
+                    }
                 }
             }
         }
@@ -37,20 +56,6 @@ pipeline {
 
     post {
         always {
-            script {
-                if (fileExists('archive/metrics_report.html')) {
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'archive',
-                        reportFiles: 'metrics_report.html',
-                        reportName: 'SonarQube Report'
-                    ])
-                } else {
-                    echo "⚠️ Skipping publishHTML — metrics_report.html not found."
-                }
-            }
             cleanWs()
         }
     }

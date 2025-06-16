@@ -1,74 +1,43 @@
-
 import json
-from datetime import datetime
+import os
 
-def render_bar(label, percentage):
-    green_bars = int(percentage / 5)
-    red_bars = 20 - green_bars
-    return f"""
-    <div style='margin: 5px 0;'>
-        <strong>{label}</strong> {percentage}%
-        <div style='background-color: #f44336; width: 100%; height: 20px; border-radius: 5px; overflow: hidden;'>
-            <div style='width: {percentage}%; background-color: #4CAF50; height: 100%;'></div>
-        </div>
-    </div>
-    """
-
-# Load SonarQube quality gate JSON
-with open("sonarqube_quality_gate.json", "r") as f:
-    quality_data = json.load(f)
-
-status = quality_data["projectStatus"]["status"]
-conditions = quality_data["projectStatus"].get("conditions", [])
-
-# Optional: Load metrics JSON if present
+# Load data
 try:
-    with open("sonarqube_metrics.json", "r") as f:
+    with open("sonar_quality.json") as f:
+        quality_data = json.load(f)
+
+    with open("sonar_metrics.json") as f:
         metrics_data = json.load(f)
-        metrics = {m["metric"]: float(m["value"]) for m in metrics_data["component"]["measures"]}
-except Exception:
-    metrics = {
-        "coverage": 65,
-        "ncloc": 1000,
-        "duplicated_lines_density": 10,
-        "complexity": 120,
-        "violations": 5
-    }
+except Exception as e:
+    print("[ERROR] Failed to load JSON files:", str(e))
+    exit(1)
 
-# Generate HTML
-with open("archive/metrics_report.html", "w") as f:
-    f.write("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>SonarQube Metrics Report</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .ok { color: green; font-weight: bold; }
-            .error { color: red; font-weight: bold; }
-        </style>
-    </head>
-    <body>
-        <h2>✅ Quality Gate Summary</h2>
-        <p><strong>Quality Gate Status:</strong> <span class="{status_class}">{status}</span></p>
-        <table>
-            <tr><th>Metric</th><th>Actual Value</th><th>Status</th><th>Error Threshold</th></tr>
-    """.replace("{status_class}", "ok" if status == "OK" else "error").replace("{status}", status))
+# Prepare output directory
+output_dir = "archive"
+os.makedirs(output_dir, exist_ok=True)
 
-    for condition in conditions:
-        f.write(f"<tr><td>{condition['metricKey']}</td><td>{condition['actualValue']}</td><td>{condition['status']}</td><td>{condition['errorThreshold']}</td></tr>")
+# Extract quality gate data
+status = quality_data.get("projectStatus", {}).get("status", "UNKNOWN")
+conditions = quality_data.get("projectStatus", {}).get("conditions", [])
 
-    f.write("""
-        </table>
-        <h2>📊 Metrics Summary</h2>
-    """)
+# Extract metrics
+measures = metrics_data.get("component", {}).get("measures", [])
 
-    for key in ("coverage", "duplicated_lines_density", "complexity", "violations"):
-        if key in metrics:
-            f.write(render_bar(key.replace("_", " ").title(), metrics[key]))
+# Generate HTML report
+with open(f"{output_dir}/metrics_report.html", "w") as f:
+    f.write("<html><head><title>SonarQube Report</title></head><body>")
+    f.write(f"<h1>Quality Gate Status: {status}</h1>")
+    f.write("<table border='1'><tr><th>Metric</th><th>Actual Value</th><th>Status</th><th>Error Threshold</th></tr>")
+    for c in conditions:
+        f.write(f"<tr><td>{c.get('metricKey')}</td><td>{c.get('actualValue')}</td><td>{c.get('status')}</td><td>{c.get('errorThreshold')}</td></tr>")
+    f.write("</table><hr>")
 
-    f.write(f"<p style='margin-top: 20px;'>Report generated on: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC</p>")
+    f.write("<h2>Metrics Overview</h2>")
+    for m in measures:
+        metric = m.get("metric")
+        value = m.get("value", "N/A")
+        percent = int(float(value)) if value.replace('.', '', 1).isdigit() else 0
+        f.write(f"<div><strong>{metric.capitalize()}</strong>: {value}%<br>")
+        f.write(f"<div style='width: 300px; background-color: red;'><div style='width: {percent}%; background-color: green; color: white;'>{percent}%</div></div></div><br>")
+
     f.write("</body></html>")
