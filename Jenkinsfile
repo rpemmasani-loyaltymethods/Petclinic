@@ -2,16 +2,15 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier')
-        string(name: 'SONAR_PROJECT_NAME', description: 'Name of the project')
-        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate to apply.')
+        string(name: 'SONAR_PROJECT_KEY', description: 'Unique identifier for the project')
+        string(name: 'SONAR_PROJECT_NAME', description: 'Project display name')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Choose the quality gate')
     }
 
     environment {
         SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
-        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
@@ -23,31 +22,16 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Build & SonarQube Analysis') {
             steps {
                 script {
-                    if (fileExists('mvnw')) {
-                        sh """
-                        chmod +x ./mvnw
-                        ./mvnw clean verify
-                        """
-                    } else {
-                        sh "${MAVEN_HOME}/bin/mvn clean verify"
-                    }
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    def qualityGate = "${params.QUALITY_GATE}"
                     def projectKey = "${params.SONAR_PROJECT_KEY}"
                     def projectName = "${params.SONAR_PROJECT_NAME}"
+                    def qualityGate = "${params.QUALITY_GATE}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                        ${MAVEN_HOME}/bin/mvn sonar:sonar \
+                        ${MAVEN_HOME}/bin/mvn clean verify sonar:sonar \
                           -Dsonar.projectKey=${projectKey} \
                           -Dsonar.projectName=${projectName} \
                           -Dsonar.host.url=${SONARQUBE_URL} \
@@ -58,70 +42,49 @@ pipeline {
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
-                        curl --header "Authorization: Basic ${SonarToken}"  \
+                        curl --header "Authorization: Basic ${SonarToken}" \
                           --location "${SONARQUBE_URL}api/qualitygates/select?projectKey=${projectKey}" \
                           --data-urlencode "gateName=${qualityGate}"
                         """
                     }
 
-                    echo 'Sleeping for 2 minutes to allow SonarQube analysis to complete...'
+                    echo 'Sleeping 2 minutes to allow SonarQube analysis to complete...'
                     sleep(time: 2, unit: 'MINUTES')
                 }
             }
         }
 
-        stage('Quality Gate') {
+        stage('Verify Quality Gate') {
             steps {
                 script {
                     def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
-                        sh """
-                        curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json
-                        """
+                        sh "curl -s -u ${SONARQUBE_TOKEN}: ${sonarUrl} > sonar_status.json"
                         def sonarStatusJson = readFile('sonar_status.json')
                         def sonarData = new groovy.json.JsonSlurper().parseText(sonarStatusJson)
-                        echo "SonarQube Response Json: ${sonarData}"
+
+                        echo "SonarQube Response JSON: ${sonarData}"
                         def sonarStatus = sonarData?.projectStatus?.status ?: 'Unknown'
                         echo "SonarQube Quality Gate Status: ${sonarStatus}"
 
                         if (sonarStatus != 'OK') {
-                            echo "Quality Gate failed! SonarQube status: ${sonarStatus}"
-                            currentBuild.result = 'FAILURE'
-                            error "Quality Gate Failed!"
+                            error "Quality Gate failed: ${sonarStatus}"
                         }
                     }
                 }
             }
         }
 
-        stage('Publish Test Results') {
-            steps {
-                junit 'target/surefire-reports/*.xml'
-            }
-        }
-
-        stage('Publish Code Coverage') {
-            steps {
-                jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java', exclusionPattern: ''
-            }
-        }
-
-        stage('Publish Checkstyle Report') {
-            steps {
-                recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
-            }
-        }
-
         stage('Fetch and Generate Graphical Metrics Report') {
             steps {
                 script {
-                    def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
+                    def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines_density,alert_status"
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
                         curl --location "${metricsUrl}" \
-                        --header "Authorization: Basic ${SonarToken}" > metrics.json
+                          --header "Authorization: Basic ${SonarToken}" > metrics.json
                         """
                     }
 
@@ -131,74 +94,30 @@ import json
 with open('metrics.json', 'r') as f:
     data = json.load(f)
 
-metrics = {m['metric']: m.get('value', 'N/A') for m in data['component']['measures']}
-
-html_content = f'''
+html_content = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SonarQube Metrics Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>SonarQube Metrics Report</title>
     <style>
-        body {{ font-family: Arial; padding: 20px; }}
-        h1 {{ text-align: center; }}
-        .chart-container {{ width: 80%; margin: auto; }}
+        body { font-family: Arial; margin: 20px; color: #333; }
+        h1 { color: #2C3E50; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f2f2f2; text-transform: uppercase; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
     </style>
 </head>
 <body>
-    <h1>SonarQube Metrics Dashboard</h1>
-
-    <div class="chart-container">
-        <canvas id="metricChart"></canvas>
-    </div>
-
-    <script>
-        const data = {{
-            labels: {list(metrics.keys())},
-            datasets: [{{
-                label: 'Metric Values',
-                data: {[float(metrics[m]) if metrics[m].replace('.', '', 1).isdigit() else 0 for m in metrics]},
-                backgroundColor: [
-                    'rgba(75, 192, 192, 0.6)',
-                    'rgba(255, 99, 132, 0.6)',
-                    'rgba(255, 206, 86, 0.6)',
-                    'rgba(54, 162, 235, 0.6)',
-                    'rgba(153, 102, 255, 0.6)',
-                    'rgba(255, 159, 64, 0.6)',
-                    'rgba(199, 199, 199, 0.6)',
-                    'rgba(83, 102, 255, 0.6)',
-                    'rgba(255, 122, 64, 0.6)',
-                    'rgba(100, 199, 99, 0.6)',
-                    'rgba(255, 205, 86, 0.6)',
-                ]
-            }}]
-        }};
-
-        const config = {{
-            type: 'bar',
-            data: data,
-            options: {{
-                responsive: true,
-                plugins: {{
-                    legend: {{ display: false }},
-                    title: {{
-                        display: true,
-                        text: 'SonarQube Project Metrics'
-                    }}
-                }},
-                scales: {{
-                    y: {{
-                        beginAtZero: true
-                    }}
-                }}
-            }}
-        }};
-
-        new Chart(document.getElementById('metricChart'), config);
-    </script>
-</body>
-</html>
+    <h1>SonarQube Metrics Report</h1>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
 '''
+
+for m in data.get("component", {}).get("measures", []):
+    html_content += f"<tr><td>{m.get('metric')}</td><td>{m.get('value')}</td></tr>"
+
+html_content += "</table></body></html>"
 
 with open('metrics_report.html', 'w') as f:
     f.write(html_content)
@@ -212,22 +131,28 @@ with open('metrics_report.html', 'w') as f:
     }
 
     post {
+        always {
+            script {
+                if (fileExists('archive/metrics_report.html')) {
+                    publishHTML([
+                        reportName: "SonarQube Metrics Report - Build ${env.BUILD_NUMBER}",
+                        reportDir: 'archive',
+                        reportFiles: 'metrics_report.html',
+                        keepAll: true,
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true
+                    ])
+                } else {
+                    echo "⚠️ Metrics report not generated."
+                }
+            }
+            cleanWs()
+        }
         success {
             echo '✅ Pipeline completed successfully.'
         }
         failure {
             echo '❌ Pipeline failed.'
-        }
-        always {
-            cleanWs()
-            publishHTML([
-                reportName: "SonarQube Metrics Report ${env.BUILD_NUMBER}",
-                reportDir: 'archive',
-                reportFiles: 'metrics_report.html',
-                keepAll: true,
-                allowMissing: false,
-                alwaysLinkToLastBuild: true
-            ])
         }
     }
 }
