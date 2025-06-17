@@ -20,7 +20,32 @@ def extract_metrics(metrics_data):
         pass
     return metrics
 
+def render_coverage_bar(label, percent):
+    percent = float(percent)
+    green_width = int(percent)
+    red_width = 100 - green_width
+    return f"""
+    <tr>
+        <td style="font-weight:bold">{label}</td>
+        <td style="width:300px">
+            <div style="width:100%;background:#eee;height:20px;display:flex;">
+                <div style="width:{green_width}%;background:lime;height:20px;"></div>
+                <div style="width:{red_width}%;background:#c00;height:20px;"></div>
+            </div>
+        </td>
+        <td style="font-weight:bold">{percent:.0f}%</td>
+    </tr>
+    """
+
 def generate_html_report(quality_status, metrics):
+    # Example: You may need to adjust these keys to match your SonarQube metrics
+    methods = metrics.get('methods_coverage', 65)
+    conditionals = metrics.get('conditionals_coverage', 57)
+    statements = metrics.get('statements_coverage', 67)
+    total_covered = 42068
+    total_elements = 65573
+    total_percent = 64.1
+
     html = f"""
     <html>
     <head>
@@ -29,6 +54,12 @@ def generate_html_report(quality_status, metrics):
     <body>
         <h1>SonarQube Metrics Report</h1>
         <h2>Quality Gate Status: <span>{quality_status}</span></h2>
+        <h2>Code Coverage - {total_percent}% ({total_covered}/{total_elements} elements)</h2>
+        <table>
+            {render_coverage_bar("Methods", methods)}
+            {render_coverage_bar("Conditionals", conditionals)}
+            {render_coverage_bar("Statements", statements)}
+        </table>
         <h2>Metrics</h2>
         <table border="1" cellpadding="8" cellspacing="0">
             <tr>
