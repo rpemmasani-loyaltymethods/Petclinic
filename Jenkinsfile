@@ -58,7 +58,9 @@ pipeline {
         stage('Convert SonarQube Issues to Checkstyle') {
             steps {
                 script {
-                    recordIssues tools: [checkStyle(pattern: 'target/checkstyle-result.xml')]
+                    sh 'python3 sonar_to_checkstyle.py'
+                    recordIssues tools: [checkStyle(pattern: 'archive/sonar_checkstyle.xml')]
+                    echo "Checkstyle issues recorded."
                 }
             }
         }
