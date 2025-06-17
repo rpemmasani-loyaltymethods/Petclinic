@@ -20,9 +20,12 @@ def extract_metrics(metrics_data):
         pass
     return metrics
 
-def render_coverage_bar(label, percent):
-    percent = float(percent)
-    green_width = int(percent)
+def render_progress_bar(label, percent):
+    try:
+        percent = float(percent)
+    except (ValueError, TypeError):
+        percent = 0
+    green_width = min(max(percent, 0), 100)
     red_width = 100 - green_width
     return f"""
     <tr>
@@ -33,18 +36,17 @@ def render_coverage_bar(label, percent):
                 <div style="width:{red_width}%;background:#c00;height:20px;"></div>
             </div>
         </td>
-        <td style="font-weight:bold">{percent:.0f}%</td>
+        <td style="font-weight:bold">{green_width:.1f}%</td>
     </tr>
     """
 
 def generate_html_report(quality_status, metrics):
-    # Example: You may need to adjust these keys to match your SonarQube metrics
-    methods = metrics.get('methods_coverage', 65)
-    conditionals = metrics.get('conditionals_coverage', 57)
-    statements = metrics.get('statements_coverage', 67)
-    total_covered = 42068
-    total_elements = 65573
-    total_percent = 64.1
+    # Use SonarQube metrics keys as available in your JSON
+    coverage = metrics.get('coverage', 0)
+    code_smells = metrics.get('code_smells', 0)
+    violations = metrics.get('violations', 0)
+    complexity = metrics.get('complexity', 0)
+    ncloc = metrics.get('ncloc', 0)
 
     html = f"""
     <html>
@@ -53,12 +55,14 @@ def generate_html_report(quality_status, metrics):
     </head>
     <body>
         <h1>SonarQube Metrics Report</h1>
-        <h2>Quality Gate Status: <span>{quality_status}</span></h2>
-        <h2>Code Coverage - {total_percent}% ({total_covered}/{total_elements} elements)</h2>
+        <h2>Quality Gate Status: 
+            <span style="color:{'green' if quality_status == 'OK' else 'red'};font-weight:bold;">
+                {quality_status}
+            </span>
+        </h2>
+        <h2>Coverage Progress</h2>
         <table>
-            {render_coverage_bar("Methods", methods)}
-            {render_coverage_bar("Conditionals", conditionals)}
-            {render_coverage_bar("Statements", statements)}
+            {render_progress_bar("Coverage", coverage)}
         </table>
         <h2>Metrics</h2>
         <table border="1" cellpadding="8" cellspacing="0">
@@ -66,11 +70,11 @@ def generate_html_report(quality_status, metrics):
                 <th>Metric</th>
                 <th>Value</th>
             </tr>
-            <tr><td>Lines of Code</td><td>{metrics.get('ncloc', 'N/A')}</td></tr>
-            <tr><td>Complexity</td><td>{metrics.get('complexity', 'N/A')}</td></tr>
-            <tr><td>Violations</td><td>{metrics.get('violations', 'N/A')}</td></tr>
-            <tr><td>Coverage</td><td>{metrics.get('coverage', 'N/A')}</td></tr>
-            <tr><td>Code Smells</td><td>{metrics.get('code_smells', 'N/A')}</td></tr>
+            <tr><td>Lines of Code</td><td>{ncloc}</td></tr>
+            <tr><td>Complexity</td><td>{complexity}</td></tr>
+            <tr><td>Violations</td><td>{violations}</td></tr>
+            <tr><td>Coverage</td><td>{coverage}</td></tr>
+            <tr><td>Code Smells</td><td>{code_smells}</td></tr>
         </table>
     </body>
     </html>
