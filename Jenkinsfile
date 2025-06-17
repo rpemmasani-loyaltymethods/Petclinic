@@ -88,3 +88,4 @@ pipeline {
         always {
             cleanWs()
         }
+    }
