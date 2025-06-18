@@ -10,7 +10,7 @@ pipeline {
     environment {
         SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         MAVEN_HOME = tool name: 'maven3'
-        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
+        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net"
         SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
