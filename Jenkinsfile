@@ -58,16 +58,22 @@ pipeline {
         stage('Convert SonarQube Issues to Checkstyle') {
             steps {
                 script {
-                    echo ${WORKSPACE}/archive
+                    echo "Workspace: ${env.WORKSPACE}/archive"
+                    sh 'ls -l archive || true'
                     sh 'mkdir -p archive'
                     sh 'chmod -R 777 archive'
-                    sh 'python3 sonar_to_checkstyle.py'
+                    echo "Running sonar_to_checkstyle.py..."
+                    sh 'python3 sonar_to_checkstyle.py || (echo "Python script failed!" && cat archive/sonar_issues.json || true && exit 1)'
+                    echo "Listing archive directory after script:"
+                    sh 'ls -l archive'
+                    echo "Displaying sonar_checkstyle.xml:"
+                    sh 'cat archive/sonar_checkstyle.xml || echo "No checkstyle XML generated."'
                     recordIssues tools: [checkStyle(pattern: 'archive/sonar_checkstyle.xml')]
                     echo "Checkstyle issues recorded."
                 }
             }
         }
-
+        
         stage('Publish HTML Report') {
             steps {
                 script {
