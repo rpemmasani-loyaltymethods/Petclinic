@@ -73,30 +73,24 @@ pipeline {
                 }
             }
         }
-        
-        stage('Publish HTML Report') {
-            steps {
-                script {
-                    if (fileExists('archive/metrics_report.html')) {
-                        publishHTML(target: [
-                            reportDir: 'archive',
-                            reportFiles: 'metrics_report.html',
-                            reportName: 'SonarQube Metrics Report ${env.BUILD_NUMBER}',
-                            keepAll: true,
-                            alwaysLinkToLastBuild: true,
-                            allowMissing: false
-                        ])
-                    } else {
-                        echo "⚠️ Skipping publishHTML — metrics_report.html not found."
-                    }
-                }
-            }
-        }
-    }
+
 
     post {
         always {
-            echo "Cleaning up workspace..."
+            script {
+                if (fileExists('archive/metrics_report.html')) {
+                    publishHTML(target: [
+                        reportDir: 'archive',
+                        reportFiles: 'metrics_report.html',
+                        reportName: 'SonarQube Metrics Report',
+                        keepAll: true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
+                    ])
+                } else {
+                    echo "⚠️ Skipping publishHTML — metrics_report.html not found."
+                }
+            }
         }
     }
 }
