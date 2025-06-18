@@ -59,6 +59,8 @@ pipeline {
             steps {
                 script {
                     echo ${WORKSPACE}/archive
+                    sh 'mkdir -p archive'
+                    sh 'chmod -R 777 archive'
                     sh 'python3 sonar_to_checkstyle.py'
                     recordIssues tools: [checkStyle(pattern: 'archive/sonar_checkstyle.xml')]
                     echo "Checkstyle issues recorded."
