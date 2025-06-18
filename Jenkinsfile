@@ -58,6 +58,7 @@ pipeline {
         stage('Convert SonarQube Issues to Checkstyle') {
             steps {
                 script {
+                    echo ${WORKSPACE}/archive
                     sh 'python3 sonar_to_checkstyle.py'
                     recordIssues tools: [checkStyle(pattern: 'archive/sonar_checkstyle.xml')]
                     echo "Checkstyle issues recorded."
@@ -87,7 +88,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            echo "Cleaning up workspace..."
         }
     }
 }

@@ -1,0 +1,1309 @@
+{
+  "total": 26,
+  "p": 1,
+  "ps": 500,
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 500,
+    "total": 26
+  },
+  "effortTotal": 184,
+  "issues": [
+    {
+      "key": "AZPPlpHthWCx7c5qEo0a",
+      "rule": "java:S5993",
+      "severity": "MAJOR",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "project": "Petclinic",
+      "line": 67,
+      "hash": "5b18e7e12872190d0f1b97508ed3484b",
+      "textRange": {
+        "startLine": 67,
+        "endLine": 67,
+        "startOffset": 1,
+        "endOffset": 7
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 48,
+                "endLine": 48,
+                "startOffset": 7,
+                "endOffset": 15
+              },
+              "msg": "This class is \"abstract\".",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Change the visibility of this constructor to \"protected\".",
+      "effort": "2min",
+      "debt": "2min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "design"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpHthWCx7c5qEo0b",
+      "rule": "java:S5993",
+      "severity": "MAJOR",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "project": "Petclinic",
+      "line": 78,
+      "hash": "50008437b52397447eb98042227e66f2",
+      "textRange": {
+        "startLine": 78,
+        "endLine": 78,
+        "startOffset": 1,
+        "endOffset": 7
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 48,
+                "endLine": 48,
+                "startOffset": 7,
+                "endOffset": 15
+              },
+              "msg": "This class is \"abstract\".",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Change the visibility of this constructor to \"protected\".",
+      "effort": "2min",
+      "debt": "2min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "design"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpHthWCx7c5qEo0c",
+      "rule": "java:S3776",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "project": "Petclinic",
+      "line": 88,
+      "hash": "6c03574d1d6d4fce3a6551b436b4aa8f",
+      "textRange": {
+        "startLine": 88,
+        "endLine": 88,
+        "startOffset": 16,
+        "endOffset": 27
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 92,
+                "endLine": 92,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 95,
+                "endLine": 95,
+                "startOffset": 2,
+                "endOffset": 7
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 98,
+                "endLine": 98,
+                "startOffset": 3,
+                "endOffset": 5
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 99,
+                "endLine": 99,
+                "startOffset": 4,
+                "endOffset": 9
+              },
+              "msg": "+3 (incl 2 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 99,
+                "endLine": 99,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 102,
+                "endLine": 102,
+                "startOffset": 5,
+                "endOffset": 7
+              },
+              "msg": "+4 (incl 3 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 107,
+                "endLine": 107,
+                "startOffset": 3,
+                "endOffset": 7
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 109,
+                "endLine": 109,
+                "startOffset": 4,
+                "endOffset": 6
+              },
+              "msg": "+3 (incl 2 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 115,
+                "endLine": 115,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 115,
+                "endLine": 115,
+                "startOffset": 59,
+                "endOffset": 61
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 115,
+                "endLine": 115,
+                "startOffset": 110,
+                "endOffset": 112
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 119,
+                "endLine": 119,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 119,
+                "endLine": 119,
+                "startOffset": 59,
+                "endOffset": 61
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+              "textRange": {
+                "startLine": 119,
+                "endLine": 119,
+                "startOffset": 111,
+                "endOffset": 113
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Refactor this method to reduce its Cognitive Complexity from 22 to the 15 allowed.",
+      "effort": "12min",
+      "debt": "12min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "brain-overload"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpHshWCx7c5qEo0Z",
+      "rule": "java:S2293",
+      "severity": "MINOR",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "project": "Petclinic",
+      "line": 89,
+      "hash": "73e06ebf431228340a16e1c595670828",
+      "textRange": {
+        "startLine": 89,
+        "endLine": 89,
+        "startOffset": 33,
+        "endOffset": 36
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace the type specification in this constructor call with the diamond operator (\"\u003C\u003E\").",
+      "effort": "1min",
+      "debt": "1min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "clumsy"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpHthWCx7c5qEo0d",
+      "rule": "java:S1155",
+      "severity": "MINOR",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "project": "Petclinic",
+      "line": 120,
+      "hash": "d32d7d3b657eb2772354898f529c5072",
+      "textRange": {
+        "startLine": 120,
+        "endLine": 120,
+        "startOffset": 4,
+        "endOffset": 22
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Use isEmpty() to check whether the collection is empty or not.",
+      "effort": "2min",
+      "debt": "2min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "clumsy"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNWhWCx7c5qEo0h",
+      "rule": "java:S112",
+      "severity": "MAJOR",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/CrashController.java",
+      "project": "Petclinic",
+      "line": 34,
+      "hash": "58abc984bd778248b11d98a2d500bc60",
+      "textRange": {
+        "startLine": 34,
+        "endLine": 34,
+        "startOffset": 18,
+        "endOffset": 34
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Define and throw a dedicated exception instead of using a generic one.",
+      "effort": "20min",
+      "debt": "20min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cert",
+        "cwe",
+        "error-handling"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNChWCx7c5qEo0e",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/OwnerController.java",
+      "project": "Petclinic",
+      "line": 64,
+      "hash": "c562e0936761dc8b72ec7bd8a47ddebc",
+      "textRange": {
+        "startLine": 64,
+        "endLine": 64,
+        "startOffset": 51,
+        "endOffset": 56
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNChWCx7c5qEo0f",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/OwnerController.java",
+      "project": "Petclinic",
+      "line": 80,
+      "hash": "8890a763e4aeb735a41e10cd7b329a7a",
+      "textRange": {
+        "startLine": 80,
+        "endLine": 80,
+        "startOffset": 40,
+        "endOffset": 45
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNChWCx7c5qEo0g",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/OwnerController.java",
+      "project": "Petclinic",
+      "line": 112,
+      "hash": "e08c33c23d56989c9da18f1db6df9850",
+      "textRange": {
+        "startLine": 112,
+        "endLine": 112,
+        "startOffset": 54,
+        "endOffset": 59
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNohWCx7c5qEo0i",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "project": "Petclinic",
+      "line": 72,
+      "hash": "b4286ec7598103c544d13560e0e47ac7",
+      "textRange": {
+        "startLine": 72,
+        "endLine": 72,
+        "startOffset": 41,
+        "endOffset": 46
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNohWCx7c5qEo0j",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "project": "Petclinic",
+      "line": 80,
+      "hash": "139df7a2d29b84d1453dd053a626389e",
+      "textRange": {
+        "startLine": 80,
+        "endLine": 80,
+        "startOffset": 44,
+        "endOffset": 49
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNohWCx7c5qEo0k",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "project": "Petclinic",
+      "line": 80,
+      "hash": "139df7a2d29b84d1453dd053a626389e",
+      "textRange": {
+        "startLine": 80,
+        "endLine": 80,
+        "startOffset": 62,
+        "endOffset": 65
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNphWCx7c5qEo0l",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "project": "Petclinic",
+      "line": 102,
+      "hash": "b4752502c35b079708f5f5ded0ed10ba",
+      "textRange": {
+        "startLine": 102,
+        "endLine": 102,
+        "startOffset": 47,
+        "endOffset": 50
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNphWCx7c5qEo0m",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "project": "Petclinic",
+      "line": 102,
+      "hash": "b4752502c35b079708f5f5ded0ed10ba",
+      "textRange": {
+        "startLine": 102,
+        "endLine": 102,
+        "startOffset": 80,
+        "endOffset": 85
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpNxhWCx7c5qEo0n",
+      "rule": "java:S4684",
+      "severity": "CRITICAL",
+      "component": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/VisitController.java",
+      "project": "Petclinic",
+      "line": 79,
+      "hash": "6423b02dadebb3fb4eaf77c14197fe29",
+      "textRange": {
+        "startLine": 79,
+        "endLine": 79,
+        "startOffset": 51,
+        "endOffset": 56
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Replace this persistent entity with a simple POJO or DTO object.",
+      "effort": "10min",
+      "debt": "10min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "cwe",
+        "owasp-a5",
+        "spring"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "VULNERABILITY",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpQBhWCx7c5qEo0x",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java",
+      "project": "Petclinic",
+      "line": 39,
+      "hash": "1ff36b37197ccc862401a350e315acb3",
+      "textRange": {
+        "startLine": 39,
+        "endLine": 39,
+        "startOffset": 48,
+        "endOffset": 57
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java",
+              "textRange": {
+                "startLine": 39,
+                "endLine": 39,
+                "startOffset": 19,
+                "endOffset": 46
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpQBhWCx7c5qEo0y",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java",
+      "project": "Petclinic",
+      "line": 41,
+      "hash": "2f017c1a3572bce60f579ca261c808f3",
+      "textRange": {
+        "startLine": 41,
+        "endLine": 41,
+        "startOffset": 59,
+        "endOffset": 68
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java",
+              "textRange": {
+                "startLine": 41,
+                "endLine": 41,
+                "startOffset": 19,
+                "endOffset": 57
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasToString(expectedString) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": false,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0o",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 61,
+      "hash": "d92c7a4851e26a49e9a27b5d29990076",
+      "textRange": {
+        "startLine": 61,
+        "endLine": 61,
+        "startOffset": 34,
+        "endOffset": 43
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 61,
+                "endLine": 61,
+                "startOffset": 19,
+                "endOffset": 32
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0p",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 64,
+      "hash": "5ea7e535612aa3985cd954844cc8d1b2",
+      "textRange": {
+        "startLine": 64,
+        "endLine": 64,
+        "startOffset": 37,
+        "endOffset": 43
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 64,
+                "endLine": 64,
+                "startOffset": 19,
+                "endOffset": 35
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).isEmpty() instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0q",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 71,
+      "hash": "72fbb4c5d025c4a2b5e25a19c6388744",
+      "textRange": {
+        "startLine": 71,
+        "endLine": 71,
+        "startOffset": 43,
+        "endOffset": 52
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 71,
+                "endLine": 71,
+                "startOffset": 19,
+                "endOffset": 41
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0r",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 89,
+      "hash": "64c3f7b1c1ad6e02241019c68d69bc43",
+      "textRange": {
+        "startLine": 89,
+        "endLine": 89,
+        "startOffset": 46,
+        "endOffset": 58
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 89,
+                "endLine": 89,
+                "startOffset": 19,
+                "endOffset": 44
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use isNotZero() instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0s",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 92,
+      "hash": "00db9002d8f64db1f30d0834059d19bd",
+      "textRange": {
+        "startLine": 92,
+        "endLine": 92,
+        "startOffset": 34,
+        "endOffset": 43
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 92,
+                "endLine": 92,
+                "startOffset": 19,
+                "endOffset": 32
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0t",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 140,
+      "hash": "c4f5da3b223cf02ee63ec082dad812d2",
+      "textRange": {
+        "startLine": 140,
+        "endLine": 140,
+        "startOffset": 44,
+        "endOffset": 53
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 140,
+                "endLine": 140,
+                "startOffset": 19,
+                "endOffset": 42
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0u",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 146,
+      "hash": "c4f5da3b223cf02ee63ec082dad812d2",
+      "textRange": {
+        "startLine": 146,
+        "endLine": 146,
+        "startOffset": 44,
+        "endOffset": 53
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 146,
+                "endLine": 146,
+                "startOffset": 19,
+                "endOffset": 42
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0v",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 188,
+      "hash": "242b21fc42af2b2e338d77ba5bb4221f",
+      "textRange": {
+        "startLine": 188,
+        "endLine": 188,
+        "startOffset": 44,
+        "endOffset": 53
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 188,
+                "endLine": 188,
+                "startOffset": 19,
+                "endOffset": 42
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    },
+    {
+      "key": "AZPPlpPOhWCx7c5qEo0w",
+      "rule": "java:S5838",
+      "severity": "MINOR",
+      "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "project": "Petclinic",
+      "line": 195,
+      "hash": "67b072a54b3aabdfe4c8afd355984529",
+      "textRange": {
+        "startLine": 195,
+        "endLine": 195,
+        "startOffset": 34,
+        "endOffset": 43
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+              "textRange": {
+                "startLine": 195,
+                "endLine": 195,
+                "startOffset": 19,
+                "endOffset": 32
+              },
+              "msg": "This can be simplified",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Use assertThat(actual).hasSize(expected) instead.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "adijaiswal@deloitte.com",
+      "tags": [
+        "assertj",
+        "tests"
+      ],
+      "creationDate": "2022-12-20T11:54:05+0000",
+      "updateDate": "2024-12-16T13:09:10+0000",
+      "type": "CODE_SMELL",
+      "scope": "TEST",
+      "quickFixAvailable": true,
+      "messageFormattings": []
+    }
+  ],
+  "components": [
+    {
+      "key": "Petclinic:src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "enabled": true,
+      "qualifier": "UTS",
+      "name": "AbstractClinicServiceTests.java",
+      "longName": "src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java",
+      "path": "src/test/java/org/springframework/samples/petclinic/service/AbstractClinicServiceTests.java"
+    },
+    {
+      "key": "Petclinic",
+      "enabled": true,
+      "qualifier": "TRK",
+      "name": "Petclinic",
+      "longName": "Petclinic"
+    },
+    {
+      "key": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/VisitController.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "VisitController.java",
+      "longName": "src/main/java/org/springframework/samples/petclinic/web/VisitController.java",
+      "path": "src/main/java/org/springframework/samples/petclinic/web/VisitController.java"
+    },
+    {
+      "key": "Petclinic:src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java",
+      "enabled": true,
+      "qualifier": "UTS",
+      "name": "ValidatorTests.java",
+      "longName": "src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java",
+      "path": "src/test/java/org/springframework/samples/petclinic/model/ValidatorTests.java"
+    },
+    {
+      "key": "Petclinic:src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "OneToManyResultSetExtractor.java",
+      "longName": "src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java",
+      "path": "src/main/java/org/springframework/samples/petclinic/repository/jdbc/OneToManyResultSetExtractor.java"
+    },
+    {
+      "key": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/OwnerController.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "OwnerController.java",
+      "longName": "src/main/java/org/springframework/samples/petclinic/web/OwnerController.java",
+      "path": "src/main/java/org/springframework/samples/petclinic/web/OwnerController.java"
+    },
+    {
+      "key": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/CrashController.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "CrashController.java",
+      "longName": "src/main/java/org/springframework/samples/petclinic/web/CrashController.java",
+      "path": "src/main/java/org/springframework/samples/petclinic/web/CrashController.java"
+    },
+    {
+      "key": "Petclinic:src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "PetController.java",
+      "longName": "src/main/java/org/springframework/samples/petclinic/web/PetController.java",
+      "path": "src/main/java/org/springframework/samples/petclinic/web/PetController.java"
+    }
+  ],
+  "facets": []
+}
