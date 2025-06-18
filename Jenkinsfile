@@ -26,7 +26,7 @@ pipeline {
             steps {
                 script {
                     def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
-                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells"
+                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,lines_to_cover,uncovered_lines,line_coverage,branch_coverage,method_coverage"
                     def issuesURL = "${env.SONARQUBE_URL}/api/issues/search?componentKeys=${params.SONAR_PROJECT_KEY}&ps=500"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
@@ -38,11 +38,18 @@ pipeline {
                         """
                     }
 
-                    echo "🐍 Running generate_report.py"
+                    echo "🐍 Running generate_report.py (combined HTML)"
                     sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
                 }
             }
         }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean verify'
+            }
+        }
+
         stage('Publish Test Results') {
             steps {
                 junit 'target/surefire-reports/*.xml'
@@ -69,7 +76,7 @@ pipeline {
                     echo "Displaying sonar_checkstyle.xml:"
                     sh 'cat archive/sonar_checkstyle.xml || echo "No checkstyle XML generated."'
                     recordIssues tools: [checkStyle(pattern: 'archive/sonar_checkstyle.xml')]
-                    echo "Checkstyle issues recorded."
+                    echo "✅ Checkstyle issues recorded."
                 }
             }
         }
@@ -78,17 +85,21 @@ pipeline {
     post {
         always {
             script {
-                if (fileExists('archive/metrics_report.html')) {
+                // ✅ Native right-side bar
+                recordCoverage tools: [jacoco()]
+
+                // ✅ Combined SonarQube report with bars + metrics
+                if (fileExists('archive/combined_metrics_report.html')) {
                     publishHTML(target: [
                         reportDir: 'archive',
-                        reportFiles: 'metrics_report.html',
-                        reportName: 'SonarQube Metrics Report',
+                        reportFiles: 'combined_metrics_report.html',
+                        reportName: 'SonarQube Combined Report',
                         keepAll: true,
                         alwaysLinkToLastBuild: true,
                         allowMissing: false
                     ])
                 } else {
-                    echo "⚠️ Skipping publishHTML — metrics_report.html not found."
+                    echo "⚠️ Skipping publishHTML — combined_metrics_report.html not found."
                 }
             }
         }
