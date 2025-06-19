@@ -40,6 +40,7 @@ pipeline {
 
                     echo "🐍 Running generate_report.py (combined HTML)"
                     sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
+                    sh 'python3 generate_cobertura_xml.py || echo "[WARN] Report generate_cobertura_xml failed, continuing build..."'
                 }
             }
         }
@@ -60,6 +61,11 @@ pipeline {
         stage('Publish Code Coverage') {
             steps {
                 jacoco execPattern: 'target/jacoco.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'
+            }
+        }
+        stage('Publish Coverage Report') {
+            steps {
+                cobertura coberturaReportFile: 'archive/sonar_cobertura.xml'
             }
         }
 
