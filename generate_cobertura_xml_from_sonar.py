@@ -6,8 +6,15 @@ from xml.etree.ElementTree import Element, SubElement, ElementTree
 with open('archive/sonar_metrics.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
-# Extract measures as float
-measures = {m["metric"]: float(m["value"]) for m in data["component"]["measures"] if "value" in m}
+# ✅ FIXED: Extract numeric measures only
+measures = {}
+for m in data["component"]["measures"]:
+    metric = m.get("metric")
+    value = m.get("value")
+    try:
+        measures[metric] = float(value)
+    except (TypeError, ValueError):
+        continue  # Skip non-numeric values like "OK"
 
 # Line coverage metrics
 lines_to_cover = int(measures.get("lines_to_cover", 0))
@@ -33,11 +40,11 @@ coverage_elem = Element("coverage", {
     "version": "1.9"
 })
 
-# Add source root
+# Add <sources>
 sources = SubElement(coverage_elem, "sources")
 SubElement(sources, "source").text = "."
 
-# Package simulation
+# Add <packages>
 packages = SubElement(coverage_elem, "packages")
 package = SubElement(packages, "package", {
     "name": "com.example.sonar",
@@ -46,7 +53,7 @@ package = SubElement(packages, "package", {
     "complexity": "0"
 })
 
-# Class simulation
+# Add <classes>
 classes = SubElement(package, "classes")
 cls = SubElement(classes, "class", {
     "name": "PetclinicCoverage",
@@ -56,7 +63,7 @@ cls = SubElement(classes, "class", {
     "complexity": "0"
 })
 
-# Line simulation
+# Add <lines>
 lines = SubElement(cls, "lines")
 for i in range(1, lines_to_cover + 1):
     hit = "1" if i <= covered_lines else "0"
@@ -66,8 +73,7 @@ for i in range(1, lines_to_cover + 1):
         "branch": "false"
     })
 
-# Optional: Simulated branches (to trigger trend graphs)
-# Jenkins expects at least one <line> with branch=true to show branch graph
+# Simulated branch coverage line to enable trend graph
 if conditions_to_cover > 0:
     SubElement(lines, "line", {
         "number": str(lines_to_cover + 1),
@@ -76,7 +82,7 @@ if conditions_to_cover > 0:
         "condition-coverage": f"{branch_coverage_percent:.1f}% ({branches_covered}/{conditions_to_cover})"
     })
 
-# Write to file
+# Write output XML
 os.makedirs("coverage", exist_ok=True)
 output_path = "coverage/sonarqube_cobertura.xml"
 ElementTree(coverage_elem).write(output_path, encoding="utf-8", xml_declaration=True)
