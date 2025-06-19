@@ -75,19 +75,21 @@ def generate_combined_html(quality_status, metrics):
 
   <h2>Code Coverage - {coverage_percent:.1f}% ({covered_lines}/{total_lines} elements)</h2>
 
-  <div class="metric-label">Methods</div>
-  <div class="bar-container">
-    <div class="bar-fill" style="width:{metrics.get('functions', 0)}%; background:green;">{int(metrics.get('method_coverage', 0))}%</div>
-  </div>
-
+  
   <div class="metric-label">Conditionals (Branches)</div>
-  <div class="bar-container">
-    <div class="bar-fill" style="width:{metrics.get('branch_coverage', 0)}%; background:green;">{int(metrics.get('branch_coverage', 0))}%</div>
+  <div class="bar-container" style="width:300px; height:24px; background:#eee; display:flex;">
+    <div style="width:{metrics.get('branch_coverage', 0)}%; background:limegreen; text-align:right; color:#222; font-weight:bold;">
+      {metrics.get('branch_coverage', 0)}%
+    </div>
+    <div style="width:{100 - float(metrics.get('branch_coverage', 0))}%; background:#c00;"></div>
   </div>
 
   <div class="metric-label">Statements (Lines)</div>
-  <div class="bar-container">
-    <div class="bar-fill" style="width:{metrics.get('line_coverage', 0)}%; background:green;">{int(metrics.get('line_coverage', 0))}%</div>
+  <div class="bar-container" style="width:300px; height:24px; background:#eee; display:flex;">
+    <div style="width:{metrics.get('line_coverage', 0)}%; background:limegreen; text-align:right; color:#222; font-weight:bold;">
+      {metrics.get('line_coverage', 0)}%
+    </div>
+    <div style="width:{100 - float(metrics.get('line_coverage', 0))}%; background:#c00;"></div>
   </div>
 
   <h2>SonarQube Metrics</h2>
@@ -97,21 +99,21 @@ def generate_combined_html(quality_status, metrics):
     <tr><td>Statements</td><td>{int(metrics.get("statements", 0))}</td></tr>
     <tr><td>Complexity</td><td>{int(metrics.get("complexity", 0))}</td></tr>
     <tr><td>Violations</td><td>{int(metrics.get("violations", 0))}</td></tr>
-    <tr><td>Coverage</td><td>{float(metrics.get("coverage", 0)):.1f}%</td></tr>
-    <tr><td>Line Coverage</td><td>{float(metrics.get("line_coverage", 0)):.1f}%</td></tr>
-    <tr><td>Branch Coverage</td><td>{float(metrics.get("branch_coverage", 0)):.1f}%</td></tr>
+    <tr><td>Coverage</td><td>{float(metrics.get("coverage", 0))}%</td></tr>
+    <tr><td>Line Coverage</td><td>{float(metrics.get("line_coverage", 0))}%</td></tr>
+    <tr><td>Branch Coverage</td><td>{float(metrics.get("branch_coverage", 0))}%</td></tr>
     <tr><td>Code Smells</td><td>{int(metrics.get("code_smells", 0))}</td></tr>
     <tr><td>Bugs</td><td>{int(metrics.get("bugs", 0))}</td></tr>
     <tr><td>Vulnerabilities</td><td>{int(metrics.get("vulnerabilities", 0))}</td></tr>
     <tr><td>Security Hotspots</td><td>{int(metrics.get("security_hotspots", 0))}</td></tr>
     <tr><td>Duplicated Lines</td><td>{int(metrics.get("duplicated_lines", 0))}</td></tr>
-    <tr><td>Functions</td><td>{int(metrics.get("functions", 0))}</td></tr>
+    <tr><td>Methods</td><td>{metrics.get("functions", 0)}</td></tr>
     <tr><td>Lines to Cover</td><td>{int(metrics.get("lines_to_cover", 0))}</td></tr>
     <tr><td>Conditions to Cover</td><td>{int(metrics.get("conditions_to_cover", 0))}</td></tr>
     <tr><td>Tests</td><td>{int(metrics.get("tests", 0))}</td></tr>
     <tr><td>Alert Status</td><td>{metrics.get("alert_status", "N/A")}</td></tr>
   </table>
-  
+
 </body>
 </html>
 """
