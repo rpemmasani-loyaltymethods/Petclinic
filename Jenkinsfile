@@ -68,7 +68,7 @@ pipeline {
         always {
             script {
                 // ✅ Native right-side bar
-                recordCoverage tools: [jacoco()]
+                // recordCoverage tools: [jacoco()]
 
                 // ✅ Combined SonarQube report with bars + metrics
                 if (fileExists('archive/combined_metrics_report.html')) {
