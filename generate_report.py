@@ -77,7 +77,7 @@ def generate_combined_html(quality_status, metrics):
 
   <div class="metric-label">Methods</div>
   <div class="bar-container">
-    <div class="bar-fill" style="width:{metrics.get('method_coverage', 0)}%; background:green;">{int(metrics.get('method_coverage', 0))}%</div>
+    <div class="bar-fill" style="width:{metrics.get('functions', 0)}%; background:green;">{int(metrics.get('method_coverage', 0))}%</div>
   </div>
 
   <div class="metric-label">Conditionals (Branches)</div>
@@ -91,15 +91,27 @@ def generate_combined_html(quality_status, metrics):
   </div>
 
   <h2>SonarQube Metrics</h2>
-  <table>
+  <table border="1" cellpadding="5">
     <tr><th>Metric</th><th>Value</th></tr>
     <tr><td>Lines of Code</td><td>{int(metrics.get("ncloc", 0))}</td></tr>
+    <tr><td>Statements</td><td>{int(metrics.get("statements", 0))}</td></tr>
     <tr><td>Complexity</td><td>{int(metrics.get("complexity", 0))}</td></tr>
     <tr><td>Violations</td><td>{int(metrics.get("violations", 0))}</td></tr>
-    <tr><td>Coverage</td><td>{metrics.get("coverage", 0):.1f}%</td></tr>
+    <tr><td>Coverage</td><td>{float(metrics.get("coverage", 0)):.1f}%</td></tr>
+    <tr><td>Line Coverage</td><td>{float(metrics.get("line_coverage", 0)):.1f}%</td></tr>
+    <tr><td>Branch Coverage</td><td>{float(metrics.get("branch_coverage", 0)):.1f}%</td></tr>
     <tr><td>Code Smells</td><td>{int(metrics.get("code_smells", 0))}</td></tr>
+    <tr><td>Bugs</td><td>{int(metrics.get("bugs", 0))}</td></tr>
+    <tr><td>Vulnerabilities</td><td>{int(metrics.get("vulnerabilities", 0))}</td></tr>
+    <tr><td>Security Hotspots</td><td>{int(metrics.get("security_hotspots", 0))}</td></tr>
+    <tr><td>Duplicated Lines</td><td>{int(metrics.get("duplicated_lines", 0))}</td></tr>
+    <tr><td>Functions</td><td>{int(metrics.get("functions", 0))}</td></tr>
+    <tr><td>Lines to Cover</td><td>{int(metrics.get("lines_to_cover", 0))}</td></tr>
+    <tr><td>Conditions to Cover</td><td>{int(metrics.get("conditions_to_cover", 0))}</td></tr>
+    <tr><td>Tests</td><td>{int(metrics.get("tests", 0))}</td></tr>
+    <tr><td>Alert Status</td><td>{metrics.get("alert_status", "N/A")}</td></tr>
   </table>
-
+  
 </body>
 </html>
 """
