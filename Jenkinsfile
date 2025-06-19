@@ -34,7 +34,7 @@ pipeline {
                             mkdir -p archive
                             curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
                             curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
-                            sleep time: 30, unit: 'SECONDS'
+                            sleep 30
                         """
                     }
 
