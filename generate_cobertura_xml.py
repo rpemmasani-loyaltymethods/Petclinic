@@ -1,11 +1,22 @@
 import json
 import xml.etree.ElementTree as ET
 
+def safe_float(val):
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
+
 def generate_cobertura_xml(metrics_file, output_file):
     with open(metrics_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    measures = {m["metric"]: float(m["value"]) for m in data["component"]["measures"] if "value" in m}
+    # Only include numeric metrics
+    measures = {
+        m["metric"]: safe_float(m["value"])
+        for m in data["component"]["measures"]
+        if "value" in m and safe_float(m["value"]) is not None
+    }
 
     total_lines = int(measures.get("lines_to_cover", 0))
     uncovered_lines = int(measures.get("uncovered_lines", 0))
@@ -15,12 +26,12 @@ def generate_cobertura_xml(metrics_file, output_file):
     # Create XML structure (mimicking Cobertura's format)
     coverage = ET.Element("coverage", {
         "line-rate": f"{line_rate:.4f}",
-        "branch-rate": f"{measures.get('branch_coverage', 0)/100:.4f}",
+        "branch-rate": f"{(measures.get('branch_coverage', 0) or 0)/100:.4f}",
         "lines-covered": str(covered_lines),
         "lines-valid": str(total_lines),
         "branches-covered": "0",
         "branches-valid": "0",
-        "complexity": str(measures.get("complexity", 0)),
+        "complexity": str(measures.get("complexity", 0) or 0),
         "timestamp": "0",
         "version": "1.9"
     })
@@ -33,7 +44,7 @@ def generate_cobertura_xml(metrics_file, output_file):
         "name": "sonarqube",
         "line-rate": f"{line_rate:.4f}",
         "branch-rate": "0.0",
-        "complexity": str(measures.get("complexity", 0))
+        "complexity": str(measures.get("complexity", 0) or 0)
     })
 
     classes = ET.SubElement(package, "classes")
@@ -42,7 +53,7 @@ def generate_cobertura_xml(metrics_file, output_file):
         "filename": "summary",
         "line-rate": f"{line_rate:.4f}",
         "branch-rate": "0.0",
-        "complexity": str(measures.get("complexity", 0))
+        "complexity": str(measures.get("complexity", 0) or 0)
     })
 
     lines = ET.SubElement(class_, "lines")
