@@ -48,7 +48,7 @@ pipeline {
 
         stage('Publish Sonar Coverage Report') {
             steps {
-                cobertura coberturaReportFile: 'coverage/sonar_cobertura.xml'
+                cobertura coberturaReportFile: 'coverage/sonarqube_cobertura.xml'
             }
         }
         stage('Publish Coverage Report') {
