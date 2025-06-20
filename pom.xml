@@ -10,7 +10,7 @@
   <version>5.3.13</version>
   <packaging>war</packaging>
   <name>Spring Framework Petclinic</name>
-  <description>A Spring Framework application based on JSP, Spring MVC, Spring Data JPA, Hibernate and JDBC</description>
+  <description>A Spring Framework application using Spring MVC, Spring Data JPA, Hibernate, and JSP</description>
 
   <properties>
     <java.version>1.8</java.version>
@@ -18,35 +18,35 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <spring-framework.version>5.3.18</spring-framework.version>
-    <webjars-bootstrap.version>3.3.6</webjars-bootstrap.version>
-    <webjars-jquery-ui.version>1.12.1</webjars-jquery-ui.version>
-    <webjars-jquery.version>3.5.1</webjars-jquery.version>
-
     <spring-data.version>2021.1.0-RC1</spring-data.version>
     <hibernate.version>5.6.0.Final</hibernate.version>
     <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
+
     <hsqldb.version>2.5.2</hsqldb.version>
     <h2database.version>1.4.200</h2database.version>
-
     <servlet-api.version>4.0.4</servlet-api.version>
+
     <jaxb-api.version>2.3.1</jaxb-api.version>
     <jaxb-runtime.version>2.3.4</jaxb-runtime.version>
     <javax-activation.version>1.2.0</javax-activation.version>
-    <taglibs-standard.version>1.2.5</taglibs-standard.version>
 
+    <webjars-bootstrap.version>3.3.6</webjars-bootstrap.version>
+    <webjars-jquery.version>3.5.1</webjars-jquery-ui.version>
+    <webjars-jquery-ui.version>1.12.1</webjars-jquery-ui.version>
+
+    <taglibs-standard.version>1.2.5</taglibs-standard.version>
     <slf4j.version>1.7.32</slf4j.version>
     <logback.version>1.2.6</logback.version>
-
-    <junit-jupiter.version>5.8.1</junit-jupiter.version>
-    <assertj.version>3.21.0</assertj.version>
-    <mockito.version>4.0.0</mockito.version>
-    <hamcrest.version>2.2</hamcrest.version>
 
     <jackson.version>2.12.4</jackson.version>
     <aspectj.version>1.9.7</aspectj.version>
     <tomcat.version>9.0.46</tomcat.version>
 
-    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+    <junit-jupiter.version>5.8.1</junit-jupiter.version>
+    <mockito.version>4.0.0</mockito.version>
+    <assertj.version>3.21.0</assertj.version>
+    <hamcrest.version>2.2</hamcrest.version>
+
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     <maven-war-plugin.version>3.3.2</maven-war-plugin.version>
     <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
@@ -72,7 +72,7 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- Spring -->
+    <!-- Web & Spring -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
@@ -110,42 +110,7 @@
       <version>${hibernate-validator.version}</version>
     </dependency>
 
-    <!-- Servlet / JSP -->
-    <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-servlet-api</artifactId>
-      <version>${tomcat.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.taglibs</groupId>
-      <artifactId>taglibs-standard-jstlel</artifactId>
-      <version>${taglibs-standard.version}</version>
-    </dependency>
-
-    <!-- AspectJ -->
-    <dependency>
-      <groupId>org.aspectj</groupId>
-      <artifactId>aspectjrt</artifactId>
-      <version>${aspectj.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.aspectj</groupId>
-      <artifactId>aspectjweaver</artifactId>
-      <version>${aspectj.version}</version>
-    </dependency>
-
-    <!-- Jackson -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <!-- Database -->
+    <!-- DB & JDBC -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
@@ -153,62 +118,7 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-
-    <!-- Webjars -->
-    <dependency>
-      <groupId>org.webjars</groupId>
-      <artifactId>bootstrap</artifactId>
-      <version>${webjars-bootstrap.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.webjars</groupId>
-      <artifactId>jquery-ui</artifactId>
-      <version>${webjars-jquery-ui.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.webjars</groupId>
-      <artifactId>jquery</artifactId>
-      <version>${webjars-jquery.version}</version>
-    </dependency>
-
-    <!-- Test -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>${junit-jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <version>${assertj.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>${mockito.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-      <version>${hamcrest.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Java 9+ Compatibility -->
+    <!-- JAXB, Activation -->
     <dependency>
       <groupId>javax.xml.bind</groupId>
       <artifactId>jaxb-api</artifactId>
@@ -224,33 +134,122 @@
       <artifactId>javax.activation-api</artifactId>
       <version>${javax-activation.version}</version>
     </dependency>
+
+    <!-- Jackson -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <!-- Logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+    </dependency>
+
+    <!-- Taglibs & Webjars -->
+    <dependency>
+      <groupId>org.apache.taglibs</groupId>
+      <artifactId>taglibs-standard-jstlel</artifactId>
+      <version>${taglibs-standard.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>bootstrap</artifactId>
+      <version>${webjars-bootstrap.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>jquery</artifactId>
+      <version>${webjars-jquery.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>jquery-ui</artifactId>
+      <version>${webjars-jquery-ui.version}</version>
+    </dependency>
+
+    <!-- AspectJ -->
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+      <version>${aspectj.version}</version>
+    </dependency>
+
+    <!-- Testing -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring-framework.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+      <version>2.7.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <finalName>petclinic</finalName>
     <plugins>
-      <!-- Compiler -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven-compiler-plugin.version}</version>
+        <version>3.8.1</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
         </configuration>
       </plugin>
 
-      <!-- WAR Plugin -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <version>${maven-war-plugin.version}</version>
-        <configuration>
-          <failOnMissingWebXml>false</failOnMissingWebXml>
-        </configuration>
-      </plugin>
-
-      <!-- Surefire Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -262,7 +261,6 @@
         </configuration>
       </plugin>
 
-      <!-- JaCoCo -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -270,16 +268,12 @@
         <executions>
           <execution>
             <id>prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
+            <goals><goal>prepare-agent</goal></goals>
           </execution>
           <execution>
             <id>report</id>
             <phase>verify</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
+            <goals><goal>report</goal></goals>
           </execution>
         </executions>
       </plugin>
