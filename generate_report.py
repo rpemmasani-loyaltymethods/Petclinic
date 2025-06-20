@@ -148,11 +148,11 @@ def generate_cobertura_xml(metrics, output_path='coverage/sonarqube_cobertura.xm
     })
 
     sources = SubElement(coverage_elem, "sources")
-    SubElement(sources, "source").text = "."
+    SubElement(sources, "source").text = "/jenkins/workspace/SonarPetClinic_main/src/main/java"
 
     packages = SubElement(coverage_elem, "packages")
     package = SubElement(packages, "package", {
-        "name": "com.example.sonar",
+        "name": "org.springframework.samples.petclinic",
         "line-rate": f"{line_coverage_percent / 100:.4f}",
         "branch-rate": f"{branch_coverage_percent / 100:.4f}",
         "complexity": "0"
@@ -160,8 +160,8 @@ def generate_cobertura_xml(metrics, output_path='coverage/sonarqube_cobertura.xm
 
     classes = SubElement(package, "classes")
     cls = SubElement(classes, "class", {
-        "name": "PetclinicCoverage",
-        "filename": "Petclinic.java",
+        "name": "PetclinicInitializer",
+        "filename": "org/springframework/samples/petclinic/PetclinicInitializer.java",
         "line-rate": f"{line_coverage_percent / 100:.4f}",
         "branch-rate": f"{branch_coverage_percent / 100:.4f}",
         "complexity": "0"
@@ -187,6 +187,7 @@ def generate_cobertura_xml(metrics, output_path='coverage/sonarqube_cobertura.xm
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     ElementTree(coverage_elem).write(output_path, encoding="utf-8", xml_declaration=True)
     print(f"[INFO] ✅ Cobertura XML written to: {output_path}")
+
 
 def main():
     quality_file = os.path.join('archive', 'sonar_quality.json')
