@@ -44,17 +44,12 @@ pipeline {
             }
         }
 
-        stage('Publish Code Coverage') {
+        stage('Coverage Report') {
             steps {
-                cobertura coberturaReportFile: 'coverage/sonarqube_cobertura.xml',
-                        autoUpdateHealth: false,
-                        autoUpdateStability: false,
-                        failUnhealthy: false,
-                        failUnstable: false,
-                        onlyStable: false,
-                        zoomCoverageChart: true
-            }
-        }    
+                recordCoverage tools: [cobertura(coberturaReportFile: 'coverage/sonarqube_cobertura.xml')],
+                            sourceCodeEncoding: 'UTF-8'
+                }
+            }    
     }
     post {
         always {
