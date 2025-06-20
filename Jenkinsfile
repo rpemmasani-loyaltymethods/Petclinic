@@ -22,14 +22,6 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                script {
-                    sh "${MAVEN_HOME}/bin/mvn clean install -X"
-                }
-            }
-        }
-
         stage('Fetch SonarQube Quality Gate and Metrics') {
             steps {
                 script {
@@ -40,40 +32,32 @@ pipeline {
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
                             mkdir -p archive
-                            curl -s -H "Authorization: Bearer ${SONARQUBE_TOKEN}" "${qualityGateURL}" > archive/sonar_quality.json 
-                            curl -s -H "Authorization: Bearer ${SONARQUBE_TOKEN}" "${metricsURL}" > archive/sonar_metrics.json
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
                             sleep 30
                         """
                     }
 
-                    // ✅ Run HTML Report Generation
                     echo "🐍 Running generate_report.py (combined HTML)"
-                    sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
+                    sh 'python3 generate_cobertura_xml.py || echo "[WARN] Report generate_cobertura_xml failed, continuing build..."'
                 }
             }
         }
 
-        stage('Coverage Report') {
-        steps {
-            // Patch the source path in XML
-            sh '''
-            echo "[INFO] Patching cobertura source path..."
-            sed -i 's|<source>\\.</source>|<source>src/main/java</source>|' coverage/sonarqube_cobertura.xml
-            '''
-
-            // Record coverage
-            recordCoverage(
-            tools: [cobertura(coberturaReportFile: 'coverage/sonarqube_cobertura.xml')],
-            sourceCodeEncoding: 'UTF-8',
-            sourceDirectories: ['src/main/java']
-            )
+        stage('Publish Coverage Report') {
+            steps {
+                cobertura coberturaReportFile: 'archive/sonar_cobertura.xml'
             }
         }
+
     }
     post {
         always {
             script {
-                // ✅ Publish Combined Sonar Report if generated
+                // ✅ Native right-side bar
+                // recordCoverage tools: [jacoco()]
+
+                // ✅ Combined SonarQube report with bars + metrics
                 if (fileExists('archive/combined_metrics_report.html')) {
                     publishHTML(target: [
                         reportDir: 'archive',
