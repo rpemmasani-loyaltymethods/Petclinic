@@ -43,6 +43,16 @@ pipeline {
                 }
             }
         }
+        stage('Generate JaCoCo HTML Report') {
+            steps {
+                // Assuming JaCoCo is configured in pom.xml and tests were run
+                publishHTML([
+                    reportDir: 'target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'JaCoCo Coverage Report'
+                ])
+            }
+        }
 
         stage('Publish Coverage Report') {
             steps {
