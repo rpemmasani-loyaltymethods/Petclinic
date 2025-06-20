@@ -21,6 +21,11 @@ pipeline {
                 echo "The branch name is: ${env.BRANCH_NAME}"
             }
         }
+        stage('Test & Coverage') {
+            steps {
+                sh 'mvn clean verify'
+            }
+        }
 
         stage('Fetch SonarQube Quality Gate and Metrics') {
             steps {
@@ -44,15 +49,15 @@ pipeline {
             }
         }
 
-        stage('Generate JaCoCo HTML Report') {
+        stage('Publish JaCoCo Report') {
             steps {
-                publishHTML(target: [
+                publishHTML([
                     reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
                     reportName: 'JaCoCo Coverage Report',
                     keepAll: true,
                     alwaysLinkToLastBuild: true,
-                    allowMissing: true
+                    allowMissing: false
                 ])
             }
         }
