@@ -1,5 +1,6 @@
 import json
 import os
+from xml.etree.ElementTree import Element, SubElement, ElementTree
 
 def load_json(filename):
     with open(filename, 'r', encoding='utf-8') as f:
@@ -17,11 +18,10 @@ def extract_metrics(metrics_data):
         for measure in metrics_data['component']['measures']:
             key = measure['metric']
             value = measure['value']
-            # Parse numeric values as float, but keep non-numeric (like alert_status) as-is
             try:
                 metrics[key] = float(value)
             except ValueError:
-                metrics[key] = value  # keep as string
+                metrics[key] = value
     except Exception as e:
         print(f"[WARN] Failed to extract metrics: {e}")
     return metrics
@@ -126,6 +126,68 @@ def generate_combined_html(quality_status, metrics):
 </html>
 """
 
+def generate_cobertura_xml(metrics, output_path='coverage/sonarqube_cobertura.xml'):
+    lines_to_cover = int(metrics.get("lines_to_cover", 0))
+    uncovered_lines = int(metrics.get("uncovered_lines", 0))
+    covered_lines = lines_to_cover - uncovered_lines
+    line_coverage_percent = float(metrics.get("line_coverage", 0.0))
+    branch_coverage_percent = float(metrics.get("branch_coverage", 0.0))
+    conditions_to_cover = int(metrics.get("conditions_to_cover", 0))
+    branches_covered = int(conditions_to_cover * (branch_coverage_percent / 100)) if conditions_to_cover > 0 else 0
+
+    coverage_elem = Element("coverage", {
+        "line-rate": f"{line_coverage_percent / 100:.4f}",
+        "branch-rate": f"{branch_coverage_percent / 100:.4f}",
+        "lines-covered": str(covered_lines),
+        "lines-valid": str(lines_to_cover),
+        "branches-covered": str(branches_covered),
+        "branches-valid": str(conditions_to_cover),
+        "complexity": str(metrics.get("complexity", 0)),
+        "timestamp": "0",
+        "version": "1.9"
+    })
+
+    sources = SubElement(coverage_elem, "sources")
+    SubElement(sources, "source").text = "."
+
+    packages = SubElement(coverage_elem, "packages")
+    package = SubElement(packages, "package", {
+        "name": "com.example.sonar",
+        "line-rate": f"{line_coverage_percent / 100:.4f}",
+        "branch-rate": f"{branch_coverage_percent / 100:.4f}",
+        "complexity": "0"
+    })
+
+    classes = SubElement(package, "classes")
+    cls = SubElement(classes, "class", {
+        "name": "PetclinicCoverage",
+        "filename": "Petclinic.java",
+        "line-rate": f"{line_coverage_percent / 100:.4f}",
+        "branch-rate": f"{branch_coverage_percent / 100:.4f}",
+        "complexity": "0"
+    })
+
+    lines = SubElement(cls, "lines")
+    for i in range(1, lines_to_cover + 1):
+        hit = "1" if i <= covered_lines else "0"
+        SubElement(lines, "line", {
+            "number": str(i),
+            "hits": hit,
+            "branch": "false"
+        })
+
+    if conditions_to_cover > 0:
+        SubElement(lines, "line", {
+            "number": str(lines_to_cover + 1),
+            "hits": "1",
+            "branch": "true",
+            "condition-coverage": f"{branch_coverage_percent:.1f}% ({branches_covered}/{conditions_to_cover})"
+        })
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    ElementTree(coverage_elem).write(output_path, encoding="utf-8", xml_declaration=True)
+    print(f"[INFO] ✅ Cobertura XML written to: {output_path}")
+
 def main():
     quality_file = os.path.join('archive', 'sonar_quality.json')
     metrics_file = os.path.join('archive', 'sonar_metrics.json')
@@ -147,6 +209,11 @@ def main():
         print(f"[INFO] ✅ combined_metrics_report.html written successfully.")
     except Exception as e:
         print(f"[ERROR] Failed to write combined report: {e}")
+
+    try:
+        generate_cobertura_xml(metrics)
+    except Exception as e:
+        print(f"[ERROR] Failed to write Cobertura XML: {e}")
 
 if __name__ == "__main__":
     main()

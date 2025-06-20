@@ -40,8 +40,6 @@ pipeline {
 
                     echo "🐍 Running generate_report.py (combined HTML)"
                     sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
-                    sh 'python3 generate_cobertura_xml.py || echo "[WARN] Report generate_cobertura_xml failed, continuing build..."'
-                    sh 'python3 generate_cobertura_xml_from_sonar.py || echo "[WARN] Report generate_cobertura_xml_from_sonar failed, continuing build..."'
                 }
             }
         }
@@ -51,12 +49,6 @@ pipeline {
                 cobertura coberturaReportFile: 'coverage/sonarqube_cobertura.xml'
             }
         }
-        stage('Publish Coverage Report') {
-            steps {
-                cobertura coberturaReportFile: 'archive/sonar_cobertura.xml'
-            }
-        }
-
     }
     post {
         always {
