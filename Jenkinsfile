@@ -56,9 +56,8 @@ pipeline {
         stage('Coverage Report') {
             steps {
                 recordCoverage tools: [cobertura(coberturaReportFile: 'coverage/sonarqube_cobertura.xml')],
-                               sourceCodeEncoding: 'UTF-8',
-                               sourceDirectories: ['src/main/java']
-                archiveArtifacts artifacts: 'coverage/sonarqube_cobertura.xml', onlyIfSuccessful: true
+                    sourceCodeEncoding: 'UTF-8',
+                    sourceDirectories: ['src/main/java/org/springframework/samples/petclinic']
             }
         }
     }
