@@ -51,7 +51,8 @@ pipeline {
                     reportFiles: 'index.html',
                     reportName: 'JaCoCo Coverage Report',
                     keepAll: true,
-                    alwaysLinkToLastBuild: true
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: false
                 ])
             }
         }
