@@ -31,8 +31,9 @@
     <javax-activation.version>1.2.0</javax-activation.version>
 
     <webjars-bootstrap.version>3.3.6</webjars-bootstrap.version>
-    <webjars-jquery.version>3.5.1</webjars-jquery-ui.version>
+    <webjars-jquery.version>3.5.1</webjars-jquery.version>
     <webjars-jquery-ui.version>1.12.1</webjars-jquery-ui.version>
+
 
     <taglibs-standard.version>1.2.5</taglibs-standard.version>
     <slf4j.version>1.7.32</slf4j.version>
