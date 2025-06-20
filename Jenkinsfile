@@ -43,13 +43,15 @@ pipeline {
                 }
             }
         }
+
         stage('Generate JaCoCo HTML Report') {
             steps {
-                // Assuming JaCoCo is configured in pom.xml and tests were run
                 publishHTML([
                     reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
-                    reportName: 'JaCoCo Coverage Report'
+                    reportName: 'JaCoCo Coverage Report',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true
                 ])
             }
         }
@@ -59,15 +61,11 @@ pipeline {
                 cobertura coberturaReportFile: 'archive/sonar_cobertura.xml'
             }
         }
-
     }
+
     post {
         always {
             script {
-                // ✅ Native right-side bar
-                // recordCoverage tools: [jacoco()]
-
-                // ✅ Combined SonarQube report with bars + metrics
                 if (fileExists('archive/combined_metrics_report.html')) {
                     publishHTML(target: [
                         reportDir: 'archive',
