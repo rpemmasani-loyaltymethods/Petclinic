@@ -44,11 +44,17 @@ pipeline {
             }
         }
 
-        stage('Publish Sonar Coverage Report') {
+        stage('Publish Code Coverage') {
             steps {
-                cobertura coberturaReportFile: 'coverage/sonarqube_cobertura.xml'
+                cobertura coberturaReportFile: 'coverage/sonarqube_cobertura.xml',
+                        autoUpdateHealth: false,
+                        autoUpdateStability: false,
+                        failUnhealthy: false,
+                        failUnstable: false,
+                        onlyStable: false,
+                        zoomCoverageChart: true
             }
-        }
+        }    
     }
     post {
         always {
