@@ -54,11 +54,19 @@ pipeline {
         }
 
         stage('Coverage Report') {
-            steps {
-                recordCoverage tools: [cobertura(coberturaReportFile: 'coverage/sonarqube_cobertura.xml')],
-                    sourceCodeEncoding: 'UTF-8',
-                    sourceDirectories: ['src/main/java/org/springframework/samples/petclinic']
-            }
+        steps {
+            // Patch the source path in XML
+            sh '''
+            echo "[INFO] Patching cobertura source path..."
+            sed -i 's|<source>\\.</source>|<source>src/main/java</source>|' coverage/sonarqube_cobertura.xml
+            '''
+
+            // Record coverage
+            recordCoverage(
+            tools: [cobertura(coberturaReportFile: 'coverage/sonarqube_cobertura.xml')],
+            sourceCodeEncoding: 'UTF-8',
+            sourceDirectories: ['src/main/java']
+            )
         }
     }
 
