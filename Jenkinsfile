@@ -47,7 +47,7 @@ pipeline {
         stage('Coverage Report') {
             steps {
                 recordCoverage tools: [cobertura(coberturaReportFile: 'coverage/sonarqube_cobertura.xml')],
-                            sourceCodeEncoding: 'UTF-8'
+                            sourceCodeEncoding: 'UTF-8', sourceDirectories: ['src/main/java']
                 }
             }    
     }
