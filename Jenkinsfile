@@ -21,7 +21,13 @@ pipeline {
                 echo "The branch name is: ${env.BRANCH_NAME}"
             }
         }
-
+        stage('Build') {
+            steps {
+                script {
+                    sh "${MAVEN_HOME}/bin/mvn clean install -X"
+                }
+            }
+        }
         stage('Fetch SonarQube Quality Gate and Metrics') {
             steps {
                 script {
