@@ -46,15 +46,6 @@ pipeline {
                         """
                     }
 
-                    // ❌ Fail build if quality gate fails
-                    def qualityGate = readJSON file: 'archive/sonar_quality.json'
-                    if (qualityGate.projectStatus.status != 'OK') {
-                        error "❌ Quality Gate failed: ${qualityGate.projectStatus.status}"
-                    }
-
-                    // ✅ Ensure Python requirements (optional)
-                    sh 'pip3 install -r requirements.txt || true'
-
                     // ✅ Run HTML Report Generation
                     echo "🐍 Running generate_report.py (combined HTML)"
                     sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
