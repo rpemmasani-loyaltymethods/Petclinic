@@ -67,9 +67,9 @@ pipeline {
             sourceCodeEncoding: 'UTF-8',
             sourceDirectories: ['src/main/java']
             )
+            }
         }
     }
-
     post {
         always {
             script {
