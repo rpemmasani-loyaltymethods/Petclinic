@@ -63,7 +63,7 @@ pipeline {
         stage('Set Build Description with Coverage Summary') {
             steps {
                 script {
-                    def summary = ""
+                    def summary = "Sonar metrics not found."
                     if (fileExists('archive/sonar_metrics.json')) {
                         def json = readJSON file: 'archive/sonar_metrics.json'
                         def measures = json.component.measures.collectEntries {
@@ -77,29 +77,10 @@ pipeline {
                         def coveredLines    = totalLines - uncoveredLines
                         def coveragePercent = measures.get("coverage", 0)
 
-                        summary = """
-<h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
-
-<b>Conditionals (Branches)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${branchCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${String.format('%.1f', branchCoverage)}%
-  </div>
-  <div style="width:${100 - branchCoverage}%;background:#c00;"></div>
-</div><br/>
-
-<b>Statements (Lines)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${lineCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${String.format('%.1f', lineCoverage)}%
-  </div>
-  <div style="width:${100 - lineCoverage}%;background:#c00;"></div>
-</div>
-"""
-                    } else {
-                        summary = "⚠️ Sonar metrics not found."
+                        summary = "Coverage: ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()}) | Lines: ${String.format('%.1f', lineCoverage)}% | Branches: ${String.format('%.1f', branchCoverage)}%"
                     }
 
+                    echo "Build summary: ${summary}"
                     currentBuild.description = summary
                 }
             }
