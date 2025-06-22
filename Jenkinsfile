@@ -49,8 +49,7 @@ pipeline {
 
     post {
         always {
-            // Recommended if your Coverage Plugin is fully working
-            recordCoverage tools: [jacoco()]
+            recordCoverage tools: [[parser: 'JACOCO', pattern: 'target/site/jacoco/jacoco.xml']]
         }
     }
 }
