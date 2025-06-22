@@ -122,7 +122,8 @@ pipeline {
                     reportFiles         : 'index.html',
                     reportName          : 'JaCoCo Coverage',
                     keepAll             : true,
-                    alwaysLinkToLastBuild: true
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: false
                 ])
             }
         }
@@ -148,7 +149,8 @@ pipeline {
                         reportFiles: 'combined_metrics_report.html',
                         reportName: 'SonarQube Combined Report',
                         keepAll: true,
-                        alwaysLinkToLastBuild: true
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
                     ]
                 }
             }
