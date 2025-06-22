@@ -1,17 +1,8 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
-        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic', description: 'SonarQube Project Name')
-        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
-    }
-
     environment {
-        SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         MAVEN_HOME = tool name: 'maven3'
-        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net"
-        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
@@ -28,27 +19,9 @@ pipeline {
             }
         }
 
-        stage('Fetch SonarQube Quality Gate and Metrics') {
+        stage('Publish JaCoCo HTML Report') {
             steps {
-                script {
-                    def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
-                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=statements,uncovered_lines,functions,conditions_to_cover,lines_to_cover,branch_coverage,line_coverage,bugs,ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
-
-                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
-                        sh """
-                            mkdir -p archive
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
-                            sleep 30
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Publish JaCoCo Report') {
-            steps {
-                publishHTML([
+                publishHTML([ 
                     reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
                     reportName: 'JaCoCo Coverage Report',
@@ -62,41 +35,66 @@ pipeline {
         stage('Set Build Description with Coverage Summary') {
             steps {
                 script {
+                    def xmlFile = 'target/site/jacoco/jacoco.xml'
                     def summary = ""
-                    if (fileExists('archive/sonar_metrics.json')) {
-                        def json = readJSON file: 'archive/sonar_metrics.json'
-                        def measures = json.component.measures.collectEntries {
-                            [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
+
+                    if (fileExists(xmlFile)) {
+                        def xml = readFile(xmlFile)
+                        def coverage = new XmlSlurper().parseText(xml)
+
+                        def counters = coverage.counter.collectEntries {
+                            [(it.@type.text()): [
+                                covered: it.@covered.toInteger(),
+                                missed : it.@missed.toInteger()
+                            ]]
                         }
 
-                        def lineCoverage    = measures.get("line_coverage", 0)
-                        def branchCoverage  = measures.get("branch_coverage", 0)
-                        def totalLines      = measures.get("lines_to_cover", 0)
-                        def uncoveredLines  = measures.get("uncovered_lines", 0)
-                        def coveredLines    = totalLines - uncoveredLines
-                        def coveragePercent = measures.get("coverage", 0)
+                        def calcPct = { type ->
+                            def data = counters.get(type, [covered:0, missed:0])
+                            def total = data.covered + data.missed
+                            return total > 0 ? (100 * data.covered / total) : 0
+                        }
+
+                        def summaryPct = { type ->
+                            String.format('%.1f', calcPct(type))
+                        }
+
+                        def methodPct = summaryPct("METHOD")
+                        def condPct   = summaryPct("BRANCH")
+                        def stmtPct   = summaryPct("LINE")
+
+                        def methodTotal = counters["METHOD"]?.covered + counters["METHOD"]?.missed ?: 0
+                        def methodCovered = counters["METHOD"]?.covered ?: 0
 
                         summary = """
-<h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
+<h3 style="margin-bottom:8px;">Code Coverage – ${summaryPct("LINE")}% (${methodCovered}/${methodTotal} elements)</h3>
+
+<b>Methods</b><br/>
+<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
+  <div style="width:${methodPct}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+    ${methodPct}%
+  </div>
+  <div style="width:${100 - methodPct}%;background:#c00;"></div>
+</div><br/>
 
 <b>Conditionals (Branches)</b><br/>
 <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${branchCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${String.format('%.1f', branchCoverage)}%
+  <div style="width:${condPct}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+    ${condPct}%
   </div>
-  <div style="width:${100 - branchCoverage}%;background:#c00;"></div>
+  <div style="width:${100 - condPct}%;background:#c00;"></div>
 </div><br/>
 
 <b>Statements (Lines)</b><br/>
 <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${lineCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${String.format('%.1f', lineCoverage)}%
+  <div style="width:${stmtPct}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+    ${stmtPct}%
   </div>
-  <div style="width:${100 - lineCoverage}%;background:#c00;"></div>
+  <div style="width:${100 - stmtPct}%;background:#c00;"></div>
 </div>
 """
                     } else {
-                        summary = "⚠️ Sonar metrics not found."
+                        summary = "⚠️ JaCoCo XML not found."
                     }
 
                     currentBuild.description = summary
