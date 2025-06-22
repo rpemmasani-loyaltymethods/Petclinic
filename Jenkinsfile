@@ -43,8 +43,7 @@ pipeline {
                         """
                     }
 
-                    echo "🐍 Running generate_report.py (combined HTML)"
-                    sh 'python3 generate_cobertura_xml.py || echo "[WARN] Report generate_cobertura_xml failed, continuing build..."'
+                    echo "✅ Sonar metrics downloaded. Skipping generate_cobertura_xml.py as per new requirement."
                 }
             }
         }
@@ -62,15 +61,6 @@ pipeline {
             }
         }
 
-        stage('Publish Coverage Report') {
-            steps {
-                cobertura coberturaReportFile: 'archive/sonar_cobertura.xml',
-                          failNoReports      : false,
-                          autoUpdateHealth   : false,
-                          autoUpdateStability: false
-            }
-        }
-
         stage('Set Build Description with Coverage Summary') {
             steps {
                 script {
@@ -83,31 +73,36 @@ pipeline {
 
                         def lineCoverage    = measures.get("line_coverage", 0)
                         def branchCoverage  = measures.get("branch_coverage", 0)
+                        def methodCoverage  = measures.get("functions", 0)
                         def totalLines      = measures.get("lines_to_cover", 0)
                         def uncoveredLines  = measures.get("uncovered_lines", 0)
                         def coveredLines    = totalLines - uncoveredLines
                         def coveragePercent = measures.get("coverage", 0)
 
-                        summary = summary = """
+                        summary = """
 <h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
+<div style="border:1px solid #ccc;padding:8px;width:max-content;">
 
-<b>Conditionals (Branches)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${branchCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${String.format('%.1f', branchCoverage)}%
-  </div>
-  <div style="width:${100 - branchCoverage}%;background:#c00;"></div>
+<b>Methods</b> <span style="float:right;">${String.format('%.0f', methodCoverage)}%</span><br/>
+<div style="width:300px;height:18px;background:#eee;">
+  <div style="width:${methodCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
+  <div style="width:${100 - methodCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
 </div><br/>
 
-<b>Statements (Lines)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${lineCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${String.format('%.1f', lineCoverage)}%
-  </div>
-  <div style="width:${100 - lineCoverage}%;background:#c00;"></div>
+<b>Conditionals</b> <span style="float:right;">${String.format('%.0f', branchCoverage)}%</span><br/>
+<div style="width:300px;height:18px;background:#eee;">
+  <div style="width:${branchCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
+  <div style="width:${100 - branchCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
+</div><br/>
+
+<b>Statements</b> <span style="float:right;">${String.format('%.0f', lineCoverage)}%</span><br/>
+<div style="width:300px;height:18px;background:#eee;">
+  <div style="width:${lineCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
+  <div style="width:${100 - lineCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
+</div>
+
 </div>
 """
-
                     } else {
                         summary = "⚠️ Sonar metrics not found."
                     }
@@ -117,6 +112,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             script {
