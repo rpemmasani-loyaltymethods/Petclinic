@@ -65,10 +65,9 @@ pipeline {
         stage('Publish Coverage Report') {
             steps {
                 cobertura coberturaReportFile: 'archive/sonar_cobertura.xml',
-                        failOnError:  false,        /* stop aborting               */
-                        failNoReports: false,
-                        autoUpdateHealth: false,
-                        autoUpdateStability: false
+                          failNoReports      : false,
+                          autoUpdateHealth   : false,
+                          autoUpdateStability: false
             }
         }
 
