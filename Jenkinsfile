@@ -76,10 +76,7 @@ pipeline {
                         def coveredLines    = totalLines - uncoveredLines
                         def coveragePercent = measures.get("coverage", 0)
 
-                        def useHtml = false  // Set true if Jenkins supports HTML
-
-                        if (useHtml) {
-                            summary = """
+                        summary = """
 <h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
 
 <b>Conditionals (Branches)</b><br/>
@@ -98,11 +95,6 @@ pipeline {
   <div style="width:${100 - lineCoverage}%;background:#c00;"></div>
 </div>
 """
-                        } else {
-                            summary = "Coverage: ${String.format('%.1f', coveragePercent)}% | " +
-                                      "Lines: ${String.format('%.1f', lineCoverage)}% | " +
-                                      "Branches: ${String.format('%.1f', branchCoverage)}%"
-                        }
                     } else {
                         summary = "⚠️ Sonar metrics not found."
                     }
