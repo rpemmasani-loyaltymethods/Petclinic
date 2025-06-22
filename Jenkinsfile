@@ -88,28 +88,26 @@ pipeline {
                         def coveredLines    = totalLines - uncoveredLines
                         def coveragePercent = measures.get("coverage", 0)
 
-                        summary = """
-<style>
-.metric-container { width: 300px; height: 24px; background: #eee; display: flex; font-weight: bold; font-size: 13px; }
-.metric-green     { background: limegreen; color: #222; text-align: right; padding-right: 4px; }
-.metric-red       { background: #c00; }
-</style>
-
+                        summary = summary = """
 <h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
 
-<b>Conditionals (Branches)</b>
-<div class="metric-container">
-  <div class="metric-green" style="width:${branchCoverage}%;">${String.format('%.1f', branchCoverage)}%</div>
-  <div class="metric-red" style="width:${100 - branchCoverage}%;"></div>
-</div>
-<br/>
+<b>Conditionals (Branches)</b><br/>
+<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
+  <div style="width:${branchCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+    ${String.format('%.1f', branchCoverage)}%
+  </div>
+  <div style="width:${100 - branchCoverage}%;background:#c00;"></div>
+</div><br/>
 
-<b>Statements (Lines)</b>
-<div class="metric-container">
-  <div class="metric-green" style="width:${lineCoverage}%;">${String.format('%.1f', lineCoverage)}%</div>
-  <div class="metric-red" style="width:${100 - lineCoverage}%;"></div>
+<b>Statements (Lines)</b><br/>
+<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
+  <div style="width:${lineCoverage}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+    ${String.format('%.1f', lineCoverage)}%
+  </div>
+  <div style="width:${100 - lineCoverage}%;background:#c00;"></div>
 </div>
 """
+
                     } else {
                         summary = "⚠️ Sonar metrics not found."
                     }
