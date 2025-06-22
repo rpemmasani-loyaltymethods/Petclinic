@@ -1,88 +1,107 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
-        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic', description: 'SonarQube Project Name')
-        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
-    }
-
     environment {
-        SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         MAVEN_HOME = tool name: 'maven3'
-        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net"
-        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
         stage('Git Checkout') {
             steps {
                 git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
-                echo "The branch name is: ${env.BRANCH_NAME}"
             }
         }
 
-        stage('Test & Coverage') {
+        stage('Build & Test') {
             steps {
                 sh 'mvn clean verify'
             }
         }
 
-        stage('Fetch SonarQube Metrics') {
+        stage('Extract Coverage and Render Visual') {
             steps {
-                script {
-                    def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
-                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=statements,uncovered_lines,functions,conditions_to_cover,lines_to_cover,branch_coverage,line_coverage,bugs,ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
+                sh '''
+                    mkdir -p target/site/jacoco
 
-                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
-                        sh """
-                            mkdir -p archive
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
-                        """
-                    }
-                }
+                    METHOD_MISSED=$(grep 'counter type="METHOD"' target/site/jacoco/jacoco.xml | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
+                    METHOD_COVERED=$(grep 'counter type="METHOD"' target/site/jacoco/jacoco.xml | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
+
+                    BRANCH_MISSED=$(grep 'counter type="BRANCH"' target/site/jacoco/jacoco.xml | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
+                    BRANCH_COVERED=$(grep 'counter type="BRANCH"' target/site/jacoco/jacoco.xml | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
+
+                    LINE_MISSED=$(grep 'counter type="LINE"' target/site/jacoco/jacoco.xml | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
+                    LINE_COVERED=$(grep 'counter type="LINE"' target/site/jacoco/jacoco.xml | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
+
+                    METHOD_TOTAL=$((METHOD_MISSED + METHOD_COVERED))
+                    BRANCH_TOTAL=$((BRANCH_MISSED + BRANCH_COVERED))
+                    LINE_TOTAL=$((LINE_MISSED + LINE_COVERED))
+
+                    METHOD_PCT=$((METHOD_COVERED * 100 / METHOD_TOTAL))
+                    BRANCH_PCT=$((BRANCH_COVERED * 100 / BRANCH_TOTAL))
+                    LINE_PCT=$((LINE_COVERED * 100 / LINE_TOTAL))
+
+                    TOTAL_ELEMENTS=$((METHOD_TOTAL + BRANCH_TOTAL + LINE_TOTAL))
+                    TOTAL_COVERED=$((METHOD_COVERED + BRANCH_COVERED + LINE_COVERED))
+                    TOTAL_PCT=$((TOTAL_COVERED * 100 / TOTAL_ELEMENTS))
+
+                    cat <<EOF > target/site/jacoco/visual.html
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: Arial, sans-serif; }
+    .bar { height: 20px; width: 300px; display: flex; margin-bottom: 10px; }
+    .green { background: limegreen; height: 100%; }
+    .red { background: red; height: 100%; }
+</style>
+</head>
+<body>
+<h3>Code Coverage – ${TOTAL_PCT}% (${TOTAL_COVERED}/${TOTAL_ELEMENTS} elements)</h3>
+
+<b>Methods (${METHOD_PCT}%)</b>
+<div class="bar">
+  <div class="green" style="width: ${METHOD_PCT}%;"></div>
+  <div class="red" style="width: $((100 - METHOD_PCT))%;"></div>
+</div>
+
+<b>Conditionals (${BRANCH_PCT}%)</b>
+<div class="bar">
+  <div class="green" style="width: ${BRANCH_PCT}%;"></div>
+  <div class="red" style="width: $((100 - BRANCH_PCT))%;"></div>
+</div>
+
+<b>Statements (${LINE_PCT}%)</b>
+<div class="bar">
+  <div class="green" style="width: ${LINE_PCT}%;"></div>
+  <div class="red" style="width: $((100 - LINE_PCT))%;"></div>
+</div>
+</body>
+</html>
+EOF
+                '''
             }
         }
 
-        stage('Publish HTML Coverage Report') {
+        stage('Publish Visual & Full Report') {
             steps {
                 publishHTML([
                     reportDir: 'target/site/jacoco',
+                    reportFiles: 'visual.html',
+                    reportName: 'Coverage Summary Visual',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: false
+                ])
+
+                publishHTML([
+                    reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
-                    reportName: 'JaCoCo Coverage Report',
+                    reportName: 'JaCoCo Full Report',
                     keepAll: true,
                     alwaysLinkToLastBuild: true,
                     allowMissing: false
                 ])
             }
         }
-
-        stage('Record JaCoCo Coverage (Right Panel)') {
-            steps {
-                jacoco(
-                    execPattern: 'target/jacoco.exec',
-                    classPattern: 'target/classes',
-                    sourcePattern: 'src/main/java',
-                    exclusionPattern: '**/test/**'
-                )
-            }
-        }
-
-        // Optional stage: Show coverage % in build description if needed
-        // Can be re-enabled if you ever want a short text summary
-        /*
-        stage('Set Build Description') {
-            steps {
-                script {
-                    if (fileExists('archive/sonar_metrics.json')) {
-                        def json = readJSON file: 'archive/sonar_metrics.json'
-                        def coverage = json.component.measures.find { it.metric == 'coverage' }?.value
-                        currentBuild.description = "Coverage: ${coverage ?: 'N/A'}%"
-                    }
-                }
-            }
-        }
-        */
     }
 }
