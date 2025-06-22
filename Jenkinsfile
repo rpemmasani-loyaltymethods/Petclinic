@@ -66,45 +66,47 @@ pipeline {
                 script {
                     def summary = ""
                     if (fileExists('archive/sonar_metrics.json')) {
-                        def json = readJSON file: 'archive/sonar_metrics.json'
+                        echo "✅ sonar_metrics.json found"
+                        def rawJson = readFile 'archive/sonar_metrics.json'
+                        def json = readJSON text: rawJson
                         def measures = json.component.measures.collectEntries {
                             [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
                         }
 
                         def lineCoverage    = measures.get("line_coverage", 0)
                         def branchCoverage  = measures.get("branch_coverage", 0)
-                        def methodCoverage  = measures.get("functions", 0)
+                        def methodCoverage  = measures.get("functions", 0)  // You may replace with 'methods' if available
                         def totalLines      = measures.get("lines_to_cover", 0)
                         def uncoveredLines  = measures.get("uncovered_lines", 0)
                         def coveredLines    = totalLines - uncoveredLines
                         def coveragePercent = measures.get("coverage", 0)
 
                         summary = """
-<h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
-<div style="border:1px solid #ccc;padding:8px;width:max-content;">
+        <h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
+        <div style="border:1px solid #ccc;padding:8px;width:max-content;">
 
-<b>Methods</b> <span style="float:right;">${String.format('%.0f', methodCoverage)}%</span><br/>
-<div style="width:300px;height:18px;background:#eee;">
-  <div style="width:${methodCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
-  <div style="width:${100 - methodCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
-</div><br/>
+        <b>Methods</b> <span style="float:right;">${String.format('%.0f', methodCoverage)}%</span><br/>
+        <div style="width:300px;height:18px;background:#eee;">
+        <div style="width:${methodCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
+        <div style="width:${100 - methodCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
+        </div><br/>
 
-<b>Conditionals</b> <span style="float:right;">${String.format('%.0f', branchCoverage)}%</span><br/>
-<div style="width:300px;height:18px;background:#eee;">
-  <div style="width:${branchCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
-  <div style="width:${100 - branchCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
-</div><br/>
+        <b>Conditionals</b> <span style="float:right;">${String.format('%.1f', branchCoverage)}%</span><br/>
+        <div style="width:300px;height:18px;background:#eee;">
+        <div style="width:${branchCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
+        <div style="width:${100 - branchCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
+        </div><br/>
 
-<b>Statements</b> <span style="float:right;">${String.format('%.0f', lineCoverage)}%</span><br/>
-<div style="width:300px;height:18px;background:#eee;">
-  <div style="width:${lineCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
-  <div style="width:${100 - lineCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
-</div>
+        <b>Statements</b> <span style="float:right;">${String.format('%.1f', lineCoverage)}%</span><br/>
+        <div style="width:300px;height:18px;background:#eee;">
+        <div style="width:${lineCoverage}%;background:limegreen;height:100%;display:inline-block;"></div>
+        <div style="width:${100 - lineCoverage}%;background:#c00;height:100%;display:inline-block;"></div>
+        </div>
 
-</div>
-"""
+        </div>
+        """
                     } else {
-                        summary = "⚠️ Sonar metrics not found."
+                        summary = "⚠️ sonar_metrics.json not found!"
                     }
 
                     currentBuild.description = summary
@@ -112,7 +114,7 @@ pipeline {
             }
         }
     }
-
+    
     post {
         always {
             script {
