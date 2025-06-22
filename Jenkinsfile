@@ -1,8 +1,17 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
+        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic', description: 'SonarQube Project Name')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
+    }
+
     environment {
+        SONARQUBE_SERVER = 'Sonarqube-8.9.2'
         MAVEN_HOME = tool name: 'maven3'
+        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net"
+        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
@@ -19,9 +28,26 @@ pipeline {
             }
         }
 
-        stage('Publish JaCoCo HTML Report') {
+        stage('Fetch SonarQube Metrics') {
             steps {
-                publishHTML([ 
+                script {
+                    def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
+                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=statements,uncovered_lines,functions,conditions_to_cover,lines_to_cover,branch_coverage,line_coverage,bugs,ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
+
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        sh """
+                            mkdir -p archive
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Publish HTML Coverage Report') {
+            steps {
+                publishHTML([
                     reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
                     reportName: 'JaCoCo Coverage Report',
@@ -32,66 +58,31 @@ pipeline {
             }
         }
 
-        stage('Set Build Description with Coverage Summary') {
+        stage('Record JaCoCo Coverage (Right Panel)') {
+            steps {
+                jacoco(
+                    execPattern: 'target/jacoco.exec',
+                    classPattern: 'target/classes',
+                    sourcePattern: 'src/main/java',
+                    exclusionPattern: '**/test/**'
+                )
+            }
+        }
+
+        // Optional stage: Show coverage % in build description if needed
+        // Can be re-enabled if you ever want a short text summary
+        /*
+        stage('Set Build Description') {
             steps {
                 script {
-                    def summary = ""
-                    def xmlPath = "target/site/jacoco/jacoco.xml"
-
-                    if (fileExists(xmlPath)) {
-                        def xmlContent = readFile(xmlPath)
-
-                        def extractCoverage = { type ->
-                            def matcher = xmlContent =~ /<counter type="${type}" missed="(\d+)" covered="(\d+)"\/>/
-                            if (matcher.find()) {
-                                def missed = matcher.group(1).toInteger()
-                                def covered = matcher.group(2).toInteger()
-                                def total = missed + covered
-                                def percent = total > 0 ? (100.0 * covered / total) : 0.0
-                                return String.format("%.1f", percent)
-                            } else {
-                                return "0.0"
-                            }
-                        }
-
-                        def pctMethods = extractCoverage("METHOD")
-                        def pctBranches = extractCoverage("BRANCH")
-                        def pctLines = extractCoverage("LINE")
-
-                        summary = """
-                <h3 style="margin-bottom:8px;">Code Coverage</h3>
-
-                <b>Methods</b><br/>
-                <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-                <div style="width:${pctMethods}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-                    ${pctMethods}%
-                </div>
-                <div style="width:${100 - pctMethods.toFloat()}%;background:#c00;"></div>
-                </div><br/>
-
-                <b>Conditionals (Branches)</b><br/>
-                <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-                <div style="width:${pctBranches}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-                    ${pctBranches}%
-                </div>
-                <div style="width:${100 - pctBranches.toFloat()}%;background:#c00;"></div>
-                </div><br/>
-
-                <b>Statements (Lines)</b><br/>
-                <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-                <div style="width:${pctLines}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-                    ${pctLines}%
-                </div>
-                <div style="width:${100 - pctLines.toFloat()}%;background:#c00;"></div>
-                </div>
-                """
-                    } else {
-                        summary = "⚠️ JaCoCo XML not found."
+                    if (fileExists('archive/sonar_metrics.json')) {
+                        def json = readJSON file: 'archive/sonar_metrics.json'
+                        def coverage = json.component.measures.find { it.metric == 'coverage' }?.value
+                        currentBuild.description = "Coverage: ${coverage ?: 'N/A'}%"
                     }
-
-                    currentBuild.description = summary
                 }
             }
         }
+        */
     }
 }
