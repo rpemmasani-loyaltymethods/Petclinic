@@ -35,64 +35,56 @@ pipeline {
         stage('Set Build Description with Coverage Summary') {
             steps {
                 script {
-                    def xmlFile = 'target/site/jacoco/jacoco.xml'
                     def summary = ""
+                    def xmlPath = "target/site/jacoco/jacoco.xml"
 
-                    if (fileExists(xmlFile)) {
-                        def xml = readFile(xmlFile)
-                        def coverage = new XmlSlurper().parseText(xml)
+                    if (fileExists(xmlPath)) {
+                        def xmlContent = readFile(xmlPath)
 
-                        def counters = coverage.counter.collectEntries {
-                            [(it.@type.text()): [
-                                covered: it.@covered.toInteger(),
-                                missed : it.@missed.toInteger()
-                            ]]
+                        def extractCoverage = { type ->
+                            def matcher = xmlContent =~ /<counter type="${type}" missed="(\d+)" covered="(\d+)"\/>/
+                            if (matcher.find()) {
+                                def missed = matcher.group(1).toInteger()
+                                def covered = matcher.group(2).toInteger()
+                                def total = missed + covered
+                                def percent = total > 0 ? (100.0 * covered / total) : 0.0
+                                return String.format("%.1f", percent)
+                            } else {
+                                return "0.0"
+                            }
                         }
 
-                        def calcPct = { type ->
-                            def data = counters.get(type, [covered:0, missed:0])
-                            def total = data.covered + data.missed
-                            return total > 0 ? (100 * data.covered / total) : 0
-                        }
-
-                        def summaryPct = { type ->
-                            String.format('%.1f', calcPct(type))
-                        }
-
-                        def methodPct = summaryPct("METHOD")
-                        def condPct   = summaryPct("BRANCH")
-                        def stmtPct   = summaryPct("LINE")
-
-                        def methodTotal = counters["METHOD"]?.covered + counters["METHOD"]?.missed ?: 0
-                        def methodCovered = counters["METHOD"]?.covered ?: 0
+                        def pctMethods = extractCoverage("METHOD")
+                        def pctBranches = extractCoverage("BRANCH")
+                        def pctLines = extractCoverage("LINE")
 
                         summary = """
-<h3 style="margin-bottom:8px;">Code Coverage – ${summaryPct("LINE")}% (${methodCovered}/${methodTotal} elements)</h3>
+                <h3 style="margin-bottom:8px;">Code Coverage</h3>
 
-<b>Methods</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${methodPct}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${methodPct}%
-  </div>
-  <div style="width:${100 - methodPct}%;background:#c00;"></div>
-</div><br/>
+                <b>Methods</b><br/>
+                <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
+                <div style="width:${pctMethods}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+                    ${pctMethods}%
+                </div>
+                <div style="width:${100 - pctMethods.toFloat()}%;background:#c00;"></div>
+                </div><br/>
 
-<b>Conditionals (Branches)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${condPct}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${condPct}%
-  </div>
-  <div style="width:${100 - condPct}%;background:#c00;"></div>
-</div><br/>
+                <b>Conditionals (Branches)</b><br/>
+                <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
+                <div style="width:${pctBranches}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+                    ${pctBranches}%
+                </div>
+                <div style="width:${100 - pctBranches.toFloat()}%;background:#c00;"></div>
+                </div><br/>
 
-<b>Statements (Lines)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
-  <div style="width:${stmtPct}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
-    ${stmtPct}%
-  </div>
-  <div style="width:${100 - stmtPct}%;background:#c00;"></div>
-</div>
-"""
+                <b>Statements (Lines)</b><br/>
+                <div style="width:300px;height:24px;background:#eee;display:flex;font-weight:bold;font-size:13px;">
+                <div style="width:${pctLines}%;background:limegreen;color:#222;text-align:right;padding-right:4px;">
+                    ${pctLines}%
+                </div>
+                <div style="width:${100 - pctLines.toFloat()}%;background:#c00;"></div>
+                </div>
+                """
                     } else {
                         summary = "⚠️ JaCoCo XML not found."
                     }
