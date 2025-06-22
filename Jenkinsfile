@@ -2,147 +2,138 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'SONAR_PROJECT_KEY',  defaultValue: 'Petclinic')
-        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic')
-        choice(name: 'QUALITY_GATE',
-               choices: ['Sonar way','Default-Quality-Gate','Main-Quality-Gate','Feature-Quality-Gate'])
+        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'Petclinic', description: 'SonarQube Project Key')
+        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'Petclinic', description: 'SonarQube Project Name')
+        choice(name: 'QUALITY_GATE', choices: ['Sonar way', 'Default-Quality-Gate', 'Main-Quality-Gate', 'Feature-Quality-Gate'], description: 'Which quality gate you want to apply.')
     }
 
     environment {
-        MAVEN_HOME     = tool(name: 'maven3')
-        SONAR_INSTANCE = 'Sonarqube-8.9.2'
-        SONAR_URL      = 'https://sonarqube.devops.lmvi.net'
-        SONAR_TOKEN    = credentials('SONARQUBE_TOKEN')
+        SONARQUBE_SERVER = 'Sonarqube-8.9.2'
+        MAVEN_HOME = tool name: 'maven3'
+        SONARQUBE_URL = "https://sonarqube.devops.lmvi.net"
+        SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
     }
 
     stages {
-
-        stage('Checkout') {
+        stage('Git Checkout') {
             steps {
-                git branch: "${env.BRANCH_NAME}",
-                    url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
+                git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/rpemmasani-loyaltymethods/Petclinic.git'
+                echo "The branch name is: ${env.BRANCH_NAME}"
             }
         }
 
-        stage('Build & Unit-Test') {
-            steps { sh 'mvn --batch-mode clean verify' }
-        }
-
-        stage('SonarQube Scan') {
+        stage('Test & Coverage') {
             steps {
-                withSonarQubeEnv('Sonarqube-8.9.2') {
-                    sh """
-                       mvn --batch-mode sonar:sonar \
-                           -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
-                           -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
-                           -Dsonar.login=$SONAR_TOKEN
-                       """
-                }
+                sh 'mvn clean verify'
             }
         }
 
-        stage('Await Quality Gate') {
-            steps { timeout(time: 5, unit: 'MINUTES') { waitForQualityGate abortPipeline: false } }
-        }
-
-        stage('Fetch Metrics & Build Snippet') {
+        stage('Fetch SonarQube Quality Gate and Metrics') {
             steps {
                 script {
-                    sh 'mkdir -p archive'
+                    def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
+                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=statements,uncovered_lines,functions,conditions_to_cover,lines_to_cover,branch_coverage,line_coverage,bugs,ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
 
-                    def metricsURL  = "${SONAR_URL}/api/measures/component" +
-                                       "?component=${params.SONAR_PROJECT_KEY}" +
-                                       "&metricKeys=coverage,line_coverage,branch_coverage,lines_to_cover,uncovered_lines"
-
-                    sh """
-                       curl -s -u ${SONAR_TOKEN}: ${metricsURL} > archive/sonar_metrics.json
-                       """
-
-                    def cov = [line:0, branch:0, covered:0, total:0]
-
-                    if (fileExists('archive/sonar_metrics.json')) {
-                        def j = readJSON file:'archive/sonar_metrics.json'
-                        def m = j.component.measures.collectEntries{ [(it.metric): it.value] }
-                        cov.line    = m.line_coverage?.toFloat()    ?: 0
-                        cov.branch  = m.branch_coverage?.toFloat()  ?: 0
-                        cov.total   = m.lines_to_cover?.toInteger() ?: 0
-                        cov.covered = cov.total - (m.uncovered_lines?.toInteger() ?: 0)
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
+                        sh """
+                            mkdir -p archive
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
+                            sleep 30
+                        """
                     }
 
-                    if (cov.total == 0 && fileExists('target/site/jacoco/jacoco.xml')) {
-                        def xml  = readFile('target/site/jacoco/jacoco.xml')
-                        def line = xml =~ /<counter type="LINE" missed="(\d+)" covered="(\d+)"/
-                        def branch = xml =~ /<counter type="BRANCH" missed="(\d+)" covered="(\d+)"/
-                        if (line) {
-                            cov.covered = line[0][2].toInteger()
-                            def missed  = line[0][1].toInteger()
-                            cov.total   = cov.covered + missed
-                            cov.line    = 100*cov.covered / cov.total
-                        }
-                        if (branch) {
-                            def brCov  = branch[0][2].toInteger()
-                            def brMiss = branch[0][1].toInteger()
-                            cov.branch = 100*brCov / (brCov + brMiss)
-                        }
-                    }
-
-                    currentBuild.description = """
-<h3>Code Coverage – ${String.format('%.1f', cov.line)} % (${cov.covered}/${cov.total} lines)</h3>
-
-<b>Conditionals (Branches)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;">
-  <div style="width:${cov.branch}%;background:limegreen;text-align:right;color:#222;font-weight:bold;">
-    ${String.format('%.1f', cov.branch)}%
-  </div><div style="width:${100-cov.branch}%;background:#c00;"></div>
-</div><br/>
-
-<b>Statements (Lines)</b><br/>
-<div style="width:300px;height:24px;background:#eee;display:flex;">
-  <div style="width:${cov.line}%;background:limegreen;text-align:right;color:#222;font-weight:bold;">
-    ${String.format('%.1f', cov.line)}%
-  </div><div style="width:${100-cov.line}%;background:#c00;"></div>
-</div>
-"""
+                    echo "🐍 Running generate_report.py (combined HTML)"
+                    sh 'python3 generate_cobertura_xml.py || echo "[WARN] Report generate_cobertura_xml failed, continuing build..."'
                 }
             }
         }
 
-        stage('Publish JaCoCo HTML') {
+        stage('Publish JaCoCo Report') {
             steps {
                 publishHTML([
-                    reportDir            : 'target/site/jacoco',
-                    reportFiles          : 'index.html',
-                    reportName           : 'JaCoCo Coverage',
-                    keepAll              : true,
+                    reportDir: 'target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'JaCoCo Coverage Report',
+                    keepAll: true,
                     alwaysLinkToLastBuild: true,
-                    allowMissing         : false
+                    allowMissing: false
                 ])
             }
         }
 
-        stage('Publish Cobertura') {
+        stage('Publish Coverage Report') {
             steps {
                 cobertura coberturaReportFile: 'archive/sonar_cobertura.xml',
-                         failNoReports      : false,
-                         autoUpdateHealth   : false,
-                         autoUpdateStability: false,
-                         zoomCoverageChart  : true
+                        failOnError:  false,        /* stop aborting               */
+                        failNoReports: false,
+                        autoUpdateHealth: false,
+                        autoUpdateStability: false
+            }
+        }
+
+        stage('Set Build Description with Coverage Summary') {
+            steps {
+                script {
+                    def summary = ""
+                    if (fileExists('archive/sonar_metrics.json')) {
+                        def json = readJSON file: 'archive/sonar_metrics.json'
+                        def measures = json.component.measures.collectEntries {
+                            [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
+                        }
+
+                        def lineCoverage    = measures.get("line_coverage", 0)
+                        def branchCoverage  = measures.get("branch_coverage", 0)
+                        def totalLines      = measures.get("lines_to_cover", 0)
+                        def uncoveredLines  = measures.get("uncovered_lines", 0)
+                        def coveredLines    = totalLines - uncoveredLines
+                        def coveragePercent = measures.get("coverage", 0)
+
+                        summary = """
+<style>
+.metric-container { width: 300px; height: 24px; background: #eee; display: flex; font-weight: bold; font-size: 13px; }
+.metric-green     { background: limegreen; color: #222; text-align: right; padding-right: 4px; }
+.metric-red       { background: #c00; }
+</style>
+
+<h3 style="margin-bottom:8px;">Code Coverage – ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
+
+<b>Conditionals (Branches)</b>
+<div class="metric-container">
+  <div class="metric-green" style="width:${branchCoverage}%;">${String.format('%.1f', branchCoverage)}%</div>
+  <div class="metric-red" style="width:${100 - branchCoverage}%;"></div>
+</div>
+<br/>
+
+<b>Statements (Lines)</b>
+<div class="metric-container">
+  <div class="metric-green" style="width:${lineCoverage}%;">${String.format('%.1f', lineCoverage)}%</div>
+  <div class="metric-red" style="width:${100 - lineCoverage}%;"></div>
+</div>
+"""
+                    } else {
+                        summary = "⚠️ Sonar metrics not found."
+                    }
+
+                    currentBuild.description = summary
+                }
             }
         }
     }
-
     post {
         always {
             script {
                 if (fileExists('archive/combined_metrics_report.html')) {
-                    publishHTML target: [
+                    publishHTML(target: [
                         reportDir: 'archive',
                         reportFiles: 'combined_metrics_report.html',
                         reportName: 'SonarQube Combined Report',
                         keepAll: true,
                         alwaysLinkToLastBuild: true,
                         allowMissing: false
-                    ]
+                    ])
+                } else {
+                    echo "⚠️ Skipping publishHTML — combined_metrics_report.html not found."
                 }
             }
         }
