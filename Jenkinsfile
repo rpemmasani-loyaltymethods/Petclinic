@@ -21,6 +21,7 @@ pipeline {
                 echo "The branch name is: ${env.BRANCH_NAME}"
             }
         }
+
         stage('Test & Coverage') {
             steps {
                 sh 'mvn clean verify'
@@ -32,7 +33,6 @@ pipeline {
                 script {
                     def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
                     def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=statements,uncovered_lines,functions,conditions_to_cover,lines_to_cover,branch_coverage,line_coverage,bugs,ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
-                    def issuesURL = "${env.SONARQUBE_URL}/api/issues/search?componentKeys=${params.SONAR_PROJECT_KEY}&ps=500"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
@@ -65,6 +65,50 @@ pipeline {
         stage('Publish Coverage Report') {
             steps {
                 cobertura coberturaReportFile: 'archive/sonar_cobertura.xml'
+            }
+        }
+
+        stage('Set Build Description with Coverage Summary') {
+            steps {
+                script {
+                    def summary = ""
+                    if (fileExists('archive/sonar_metrics.json')) {
+                        def json = readJSON file: 'archive/sonar_metrics.json'
+                        def measures = json.component.measures.collectEntries {
+                            [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
+                        }
+
+                        def lineCoverage = measures.get("line_coverage", 0)
+                        def branchCoverage = measures.get("branch_coverage", 0)
+                        def coveredLines = measures.get("statements", 0) - measures.get("uncovered_lines", 0)
+                        def totalLines = measures.get("lines_to_cover", 0)
+                        def coveragePercent = measures.get("coverage", 0)
+
+                        summary = """
+<h3>Code Coverage - ${String.format('%.1f', coveragePercent)}% (${coveredLines.toInteger()}/${totalLines.toInteger()} elements)</h3>
+
+<b>Conditionals (Branches)</b><br/>
+<div style="width:300px; height:24px; background:#eee; display:flex;">
+  <div style="width:${branchCoverage}%; background:limegreen; text-align:right; color:#222; font-weight:bold;">
+    ${String.format('%.1f', branchCoverage)}%
+  </div>
+  <div style="width:${100 - branchCoverage}%; background:#c00;"></div>
+</div><br/>
+
+<b>Statements (Lines)</b><br/>
+<div style="width:300px; height:24px; background:#eee; display:flex;">
+  <div style="width:${lineCoverage}%; background:limegreen; text-align:right; color:#222; font-weight:bold;">
+    ${String.format('%.1f', lineCoverage)}%
+  </div>
+  <div style="width:${100 - lineCoverage}%; background:#c00;"></div>
+</div>
+"""
+                    } else {
+                        summary = "⚠️ Sonar metrics not found."
+                    }
+
+                    currentBuild.description = summary
+                }
             }
         }
     }
