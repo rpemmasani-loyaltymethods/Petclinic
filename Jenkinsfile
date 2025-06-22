@@ -10,7 +10,7 @@ pipeline {
 
     environment {
         MAVEN_HOME     = tool(name: 'maven3')
-        SONAR_INSTANCE = 'Sonarqube-8.9.2'          // name of Jenkins global config
+        SONAR_INSTANCE = 'Sonarqube-8.9.2'
         SONAR_URL      = 'https://sonarqube.devops.lmvi.net'
         SONAR_TOKEN    = credentials('SONARQUBE_TOKEN')
     }
@@ -24,12 +24,10 @@ pipeline {
             }
         }
 
-        /* 1️⃣  compile, test & produce JaCoCo -------------------------------------------------------------------------------- */
         stage('Build & Unit-Test') {
             steps { sh 'mvn --batch-mode clean verify' }
         }
 
-        /* 2️⃣  Sonar analysis (so metrics JSON really exists) ----------------------------------------------------------------- */
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv('Sonarqube-8.9.2') {
@@ -43,12 +41,10 @@ pipeline {
             }
         }
 
-        /* 3️⃣  wait for the background quality-gate to finish (optional, but nicer) ------------------------------------------- */
         stage('Await Quality Gate') {
             steps { timeout(time: 5, unit: 'MINUTES') { waitForQualityGate abortPipeline: false } }
         }
 
-        /* 4️⃣  Fetch Sonar metrics & build HTML snip --------------------------------------------------------------------------- */
         stage('Fetch Metrics & Build Snippet') {
             steps {
                 script {
@@ -62,7 +58,6 @@ pipeline {
                        curl -s -u ${SONAR_TOKEN}: ${metricsURL} > archive/sonar_metrics.json
                        """
 
-                    /* ---------- build little green/red widget (or fall back to JaCoCo) ---------- */
                     def cov = [line:0, branch:0, covered:0, total:0]
 
                     if (fileExists('archive/sonar_metrics.json')) {
@@ -74,7 +69,6 @@ pipeline {
                         cov.covered = cov.total - (m.uncovered_lines?.toInteger() ?: 0)
                     }
 
-                    /* fallback to JaCoCo XML if Sonar failed */
                     if (cov.total == 0 && fileExists('target/site/jacoco/jacoco.xml')) {
                         def xml  = readFile('target/site/jacoco/jacoco.xml')
                         def line = xml =~ /<counter type="LINE" missed="(\d+)" covered="(\d+)"/
@@ -92,7 +86,6 @@ pipeline {
                         }
                     }
 
-                    /* build the HTML block */
                     currentBuild.description = """
 <h3>Code Coverage – ${String.format('%.1f', cov.line)} % (${cov.covered}/${cov.total} lines)</h3>
 
@@ -114,16 +107,15 @@ pipeline {
             }
         }
 
-        /* 5️⃣  Publish full reports (JaCoCo & Cobertura) ---------------------------------------------------------------------- */
         stage('Publish JaCoCo HTML') {
             steps {
                 publishHTML([
-                    reportDir           : 'target/site/jacoco',
-                    reportFiles         : 'index.html',
-                    reportName          : 'JaCoCo Coverage',
-                    keepAll             : true,
+                    reportDir            : 'target/site/jacoco',
+                    reportFiles          : 'index.html',
+                    reportName           : 'JaCoCo Coverage',
+                    keepAll              : true,
                     alwaysLinkToLastBuild: true,
-                    allowMissing: false
+                    allowMissing         : false
                 ])
             }
         }
@@ -131,17 +123,16 @@ pipeline {
         stage('Publish Cobertura') {
             steps {
                 cobertura coberturaReportFile: 'archive/sonar_cobertura.xml',
-                         failOnError       : false,
-                         failNoReports     : false,
-                         autoUpdateHealth  : false,
-                         autoUpdateStability: false
+                         failNoReports      : false,
+                         autoUpdateHealth   : false,
+                         autoUpdateStability: false,
+                         zoomCoverageChart  : true
             }
         }
     }
 
     post {
         always {
-            /* still try to publish your combined Sonar HTML if it exists */
             script {
                 if (fileExists('archive/combined_metrics_report.html')) {
                     publishHTML target: [
