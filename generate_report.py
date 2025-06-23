@@ -107,7 +107,7 @@ def generate_combined_html(quality_status, metrics):
 def main():
     quality_file = os.path.join('archive', 'sonar_quality.json')
     metrics_file = os.path.join('archive', 'sonar_metrics.json')
-    combined_report = os.path.join('archive', 'combined_metrics_report.html')
+    combined_report = os.path.join('archive', 'metrics_report.html')
 
     try:
         quality_data = load_json(quality_file)
@@ -122,7 +122,7 @@ def main():
     try:
         with open(combined_report, 'w', encoding='utf-8') as f:
             f.write(generate_combined_html(quality_status, metrics))
-        print(f"[INFO] ✅ combined_metrics_report.html written successfully.")
+        print(f"[INFO] ✅ metrics_report.html written successfully.")
     except Exception as e:
         print(f"[ERROR] Failed to write combined report: {e}")
 
