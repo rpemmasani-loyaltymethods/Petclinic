@@ -12,7 +12,7 @@ pipeline {
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
         SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
-        JOB_ARCHIVE = "SonarPetClinic_main/archive"
+        JOB_ARCHIVE = "archive"
     }
 
     stages {
