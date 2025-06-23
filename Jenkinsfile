@@ -12,6 +12,7 @@ pipeline {
         MAVEN_HOME = tool name: 'maven3'
         SONARQUBE_URL = "https://sonarqube.devops.lmvi.net/"
         SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')
+        JOB_ARCHIVE = "SonarPetClinic_main/archive"
     }
 
     stages {
@@ -33,25 +34,24 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def branchName = "main"
                     def qualityGate = "${params.QUALITY_GATE}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                        ${MAVEN_HOME}/bin/mvn sonar:sonar \
-                        -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
-                        -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
-                        -Dsonar.host.url=${SONARQUBE_URL} \
-                        -Dsonar.login=${SONARQUBE_TOKEN} \
-                        -Dsonar.ws.timeout=600
+                            ${MAVEN_HOME}/bin/mvn sonar:sonar \
+                            -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
+                            -Dsonar.projectName=${params.SONAR_PROJECT_NAME} \
+                            -Dsonar.host.url=${SONARQUBE_URL} \
+                            -Dsonar.login=${SONARQUBE_TOKEN} \
+                            -Dsonar.ws.timeout=600
                         """
                     }
 
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
-                        curl --header 'Authorization: Basic ${SonarToken}' \
-                        --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${SONAR_PROJECT_KEY}' \
-                        --data-urlencode 'gateName=${qualityGate}'
+                            curl --header 'Authorization: Basic ${SonarToken}' \
+                            --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
+                            --data-urlencode 'gateName=${qualityGate}'
                         """
                     }
 
@@ -86,7 +86,7 @@ pipeline {
             }
         }
 
-        stage('Fetch SonarQube Quality Gate and Metrics') {
+        stage('Fetch SonarQube Metrics & Issues') {
             steps {
                 script {
                     def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
@@ -95,15 +95,15 @@ pipeline {
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                            mkdir -p /jenkins/workspace/archive
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > /jenkins/workspace/sonar_quality.json 
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > /jenkins/workspace/sonar_metrics.json
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${issuesURL}" > /jenkins/workspace/sonar_issues.json
+                            mkdir -p ${JOB_ARCHIVE}
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > ${JOB_ARCHIVE}/sonar_quality.json
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > ${JOB_ARCHIVE}/sonar_metrics.json
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${issuesURL}" > ${JOB_ARCHIVE}/sonar_issues.json
                         """
                     }
 
                     echo "🐍 Running generate_report.py"
-                    sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
+                    sh "python3 generate_report.py || echo '[WARN] Report generation failed, continuing build...'"
                 }
             }
         }
@@ -111,14 +111,9 @@ pipeline {
         stage('Update Build Badge Summary') {
             steps {
                 script {
-                    def coverage = 0.0
-                    def branchCoverage = 0.0
-                    def lineCoverage = 0.0
-                    def uncovered = 0
-                    def totalLines = 0
+                    def metricsFile = "${env.JOB_ARCHIVE}/sonar_metrics.json"
                     def summary = "🚫 No metrics found"
 
-                    def metricsFile = '/jenkins/workspace/sonar_metrics.json'
                     if (fileExists(metricsFile)) {
                         def content = readFile(metricsFile)
                         if (content?.trim()) {
@@ -127,11 +122,11 @@ pipeline {
                                 [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
                             }
 
-                            coverage       = measures.get("coverage", 0.0)
-                            lineCoverage   = measures.get("line_coverage", 0.0)
-                            branchCoverage = measures.get("branch_coverage", 0.0)
-                            uncovered      = measures.get("uncovered_lines", 0.0)
-                            totalLines     = measures.get("lines_to_cover", 0.0)
+                            def coverage       = measures.get("coverage", 0.0)
+                            def lineCoverage   = measures.get("line_coverage", 0.0)
+                            def branchCoverage = measures.get("branch_coverage", 0.0)
+                            def uncovered      = measures.get("uncovered_lines", 0.0)
+                            def totalLines     = measures.get("lines_to_cover", 0.0)
 
                             def coverageIcon = coverage >= 80 ? "✅" : (coverage >= 50 ? "⚠️" : "🔴")
                             def lineIcon     = lineCoverage >= 80 ? "✅" : (lineCoverage >= 50 ? "⚠️" : "🔴")
@@ -180,11 +175,11 @@ pipeline {
             cleanWs()
             script {
                 echo "Publishing Metrics Report..."
-                def htmlPath = '/jenkins/workspace/archive/metrics_report.html'
+                def htmlPath = "${env.JOB_ARCHIVE}/metrics_report.html"
                 if (fileExists(htmlPath)) {
                     publishHTML([
                         reportName: "SonarQube #${env.BUILD_NUMBER}",
-                        reportDir: '/jenkins/workspace/archive/',
+                        reportDir: "${env.JOB_ARCHIVE}",
                         reportFiles: 'metrics_report.html',
                         keepAll: true,
                         allowMissing: false,
