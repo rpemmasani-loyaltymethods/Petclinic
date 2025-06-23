@@ -1,4 +1,4 @@
-pipeline {
+pipeline {Add commentMore actions
     agent any
 
     parameters {
@@ -25,7 +25,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    sh 'mvn clean verify'
+                    sh "${MAVEN_HOME}/bin/mvn clean install -X"
                 }
             }
         }
@@ -62,7 +62,7 @@ pipeline {
 
                     // Sleep for 2 minutes after SonarQube analysis
                     echo 'Sleeping for 2 minutes after SonarQube analysis...'
-                    sleep(time: 30, unit: 'SECONDS')
+                    sleep(time: 2, unit: 'MINUTES')
                 }
             }
         }
@@ -198,15 +198,16 @@ with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
                 }
             }
         }
-        stage('Update Build Badge Summary') {
-            steps {
-                script {
-                    def coverage = 0.0
-                    def branchCoverage = 0.0
-                    def lineCoverage = 0.0
-                    def uncovered = 0
-                    def totalLines = 0
-                    def summary = "🚫 No metrics found"
+    }
+    stage('Update Build Badge Summary') {
+        steps {
+            script {
+                def coverage = 0.0
+                def branchCoverage = 0.0
+                def lineCoverage = 0.0
+                def uncovered = 0
+                def totalLines = 0
+                def summary = "🚫 No metrics found"
 
                     if (fileExists('archive/sonar_metrics.json')) {
                         def json = readJSON file: 'archive/sonar_metrics.json'
