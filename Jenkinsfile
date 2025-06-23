@@ -239,18 +239,17 @@ with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
                     }
                 }
             }
-
-            stage('Publish JaCoCo HTML Report') {
-                steps {
-                    publishHTML([
-                        reportDir: 'target/site/jacoco',
-                        reportFiles: 'index.html',
-                        reportName: 'JaCoCo Coverage Report',
-                        keepAll: true,
-                        alwaysLinkToLastBuild: true,
-                        allowMissing: true
-                    ])
-                }
+        }
+        stage('Publish JaCoCo HTML Report') {
+            steps {
+                publishHTML([
+                    reportDir: 'target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'JaCoCo Coverage Report',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: true
+                ])
             }
         }
     }
@@ -277,3 +276,4 @@ with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
         }
     }
 }
+
