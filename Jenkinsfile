@@ -95,10 +95,10 @@ pipeline {
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                            mkdir -p archive
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
-                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${issuesURL}" > archive/sonar_issues.json
+                            mkdir -p /jenkins/workspace/archive
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > /jenkins/workspace/sonar_quality.json 
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > /jenkins/workspace/sonar_metrics.json
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${issuesURL}" > /jenkins/workspace/sonar_issues.json
                         """
                     }
 
@@ -117,8 +117,8 @@ pipeline {
                     def totalLines = 0
                     def summary = "🚫 No metrics found"
 
-                    if (fileExists('archive/sonar_metrics.json')) {
-                        def json = readJSON file: 'archive/sonar_metrics.json'
+                    if (fileExists('/jenkins/workspace/sonar_metrics.json')) {
+                        def json = readJSON file: '/jenkins/workspace/sonar_metrics.json'
                         def measures = json.component.measures.collectEntries {
                             [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
                         }
