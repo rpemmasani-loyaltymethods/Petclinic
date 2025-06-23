@@ -55,8 +55,8 @@ pipeline {
                         """
                     }
 
-                    echo 'Sleeping for 2 minutes after SonarQube analysis...'
-                    sleep(time: 2, unit: 'MINUTES')
+                    echo 'Sleeping for 30 seconds after SonarQube analysis...'
+                    sleep(time: 30, unit: 'SECONDS')
                 }
             }
         }
