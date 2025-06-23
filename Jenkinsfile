@@ -172,7 +172,6 @@ pipeline {
             echo 'Pipeline failed.'
         }
         always {
-            cleanWs()
             script {
                 echo "Publishing Metrics Report..."
                 def htmlPath = "${env.JOB_ARCHIVE}/metrics_report.html"
