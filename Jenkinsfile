@@ -90,7 +90,7 @@ pipeline {
             steps {
                 script {
                     def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
-                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells"
+                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,line_coverage,branch_coverage,uncovered_lines,lines_to_cover"
                     def issuesURL = "${env.SONARQUBE_URL}/api/issues/search?componentKeys=${params.SONAR_PROJECT_KEY}&ps=500"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
@@ -107,6 +107,7 @@ pipeline {
                 }
             }
         }
+
         stage('Update Build Badge Summary') {
             steps {
                 script {
@@ -117,28 +118,36 @@ pipeline {
                     def totalLines = 0
                     def summary = "🚫 No metrics found"
 
-                    if (fileExists('/jenkins/workspace/sonar_metrics.json')) {
-                        def json = readJSON file: '/jenkins/workspace/sonar_metrics.json'
-                        def measures = json.component.measures.collectEntries {
-                            [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
-                        }
+                    def metricsFile = '/jenkins/workspace/sonar_metrics.json'
+                    if (fileExists(metricsFile)) {
+                        def content = readFile(metricsFile)
+                        if (content?.trim()) {
+                            def json = readJSON text: content
+                            def measures = json.component.measures.collectEntries {
+                                [(it.metric): it.value?.replace('%', '')?.toFloat() ?: 0.0]
+                            }
 
-                        coverage       = measures.get("coverage", 0.0)
-                        lineCoverage   = measures.get("line_coverage", 0.0)
-                        branchCoverage = measures.get("branch_coverage", 0.0)
-                        uncovered      = measures.get("uncovered_lines", 0.0)
-                        totalLines     = measures.get("lines_to_cover", 0.0)
+                            coverage       = measures.get("coverage", 0.0)
+                            lineCoverage   = measures.get("line_coverage", 0.0)
+                            branchCoverage = measures.get("branch_coverage", 0.0)
+                            uncovered      = measures.get("uncovered_lines", 0.0)
+                            totalLines     = measures.get("lines_to_cover", 0.0)
 
-                        def coverageIcon = coverage >= 80 ? "✅" : (coverage >= 50 ? "⚠️" : "🔴")
-                        def lineIcon     = lineCoverage >= 80 ? "✅" : (lineCoverage >= 50 ? "⚠️" : "🔴")
-                        def branchIcon   = branchCoverage >= 80 ? "✅" : (branchCoverage >= 50 ? "⚠️" : "🔴")
+                            def coverageIcon = coverage >= 80 ? "✅" : (coverage >= 50 ? "⚠️" : "🔴")
+                            def lineIcon     = lineCoverage >= 80 ? "✅" : (lineCoverage >= 50 ? "⚠️" : "🔴")
+                            def branchIcon   = branchCoverage >= 80 ? "✅" : (branchCoverage >= 50 ? "⚠️" : "🔴")
 
-                        summary = """
+                            summary = """
     ${coverageIcon} <b>Total Coverage</b>: ${String.format("%.1f", coverage)}%<br/>
     ${lineIcon} <b>Line Coverage</b>: ${String.format("%.1f", lineCoverage)}%<br/>
     ${branchIcon} <b>Branch Coverage</b>: ${String.format("%.1f", branchCoverage)}%<br/>
     📉 <b>Uncovered Lines</b>: ${uncovered.toInteger()} / ${totalLines.toInteger()}
     """
+                        } else {
+                            echo "[WARN] sonar_metrics.json is empty."
+                        }
+                    } else {
+                        echo "[WARN] sonar_metrics.json not found."
                     }
 
                     currentBuild.description = summary
@@ -171,14 +180,19 @@ pipeline {
             cleanWs()
             script {
                 echo "Publishing Metrics Report..."
-                publishHTML([
-                    reportName: "SonarQube #${env.BUILD_NUMBER}",
-                    reportDir: '/jenkins/workspace/archive/',
-                    reportFiles: 'metrics_report.html',
-                    keepAll: true,
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true
-                ])
+                def htmlPath = '/jenkins/workspace/archive/metrics_report.html'
+                if (fileExists(htmlPath)) {
+                    publishHTML([
+                        reportName: "SonarQube #${env.BUILD_NUMBER}",
+                        reportDir: '/jenkins/workspace/archive/',
+                        reportFiles: 'metrics_report.html',
+                        keepAll: true,
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true
+                    ])
+                } else {
+                    echo "[WARN] metrics_report.html not found, skipping publishHTML"
+                }
             }
         }
     }
