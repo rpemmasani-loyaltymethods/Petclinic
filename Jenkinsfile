@@ -50,7 +50,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
                         sh """
                             curl --header 'Authorization: Basic ${SonarToken}' \
-                            --location '${SONARQUBE_URL}api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
+                            --location '${SONARQUBE_URL}/api/qualitygates/select?projectKey=${params.SONAR_PROJECT_KEY}' \
                             --data-urlencode 'gateName=${qualityGate}'
                         """
                     }
@@ -64,7 +64,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 script {
-                    def sonarUrl = "${SONARQUBE_URL}api/qualitygates/project_status?projectKey=${SONAR_PROJECT_KEY}"
+                    def sonarUrl = "${SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${SONAR_PROJECT_KEY}"
 
                     withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
