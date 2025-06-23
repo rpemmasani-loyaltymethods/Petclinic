@@ -86,62 +86,27 @@ pipeline {
             }
         }
 
-        stage('Fetch and Convert Metrics') {
+        stage('Fetch SonarQube Quality Gate and Metrics') {
             steps {
                 script {
-                    def metricsUrl = "${SONARQUBE_URL}api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells,security_hotspots,bugs,vulnerabilities,tests,duplicated_lines,alert_status"
-                    withCredentials([string(credentialsId: 'SonarToken', variable: 'SonarToken')]) {
+                    def qualityGateURL = "${env.SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${params.SONAR_PROJECT_KEY}"
+                    def metricsURL = "${env.SONARQUBE_URL}/api/measures/component?component=${params.SONAR_PROJECT_KEY}&metricKeys=ncloc,complexity,violations,coverage,code_smells"
+                    def issuesURL = "${env.SONARQUBE_URL}/api/issues/search?componentKeys=${params.SONAR_PROJECT_KEY}&ps=500"
+
+                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONARQUBE_TOKEN')]) {
                         sh """
-                        curl --location '${metricsUrl}' \
-                        --header 'Authorization: Basic ${SonarToken}' > metrics.json
+                            mkdir -p archive
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${qualityGateURL}" > archive/sonar_quality.json 
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${metricsURL}" > archive/sonar_metrics.json
+                            curl -s -H "Authorization: Basic \$(echo -n ${SONARQUBE_TOKEN}: | base64)" "${issuesURL}" > archive/sonar_issues.json
                         """
                     }
 
-                    def pythonScript = """
-import json
-
-with open('metrics.json', 'r') as f:
-    data = json.load(f)
-
-html_content = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>SonarQube Metrics Report</title>
-    <style>
-        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; color: #333; }
-        h1 { color: #2C3E50; text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin: 20px auto; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f9f9f9; font-weight: bold; text-transform: uppercase; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        tr:hover { background-color: #f1f1f1; }
-    </style>
-</head>
-<body>
-    <h1>SonarQube Metrics Report</h1>
-    <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-'''
-
-for measure in data['component']['measures']:
-    metric = measure.get('metric', 'N/A')
-    value = measure.get('value', 'N/A')
-    html_content += f"<tr><td>{metric}</td><td>{value}</td></tr>"
-
-html_content += "</table></body></html>"
-
-with open('/jenkins/workspace/archive/metrics_report.html', 'w') as f:
-    f.write(html_content)
-"""
-
-                    writeFile file: 'generate_report.py', text: pythonScript
-                    sh 'python3 generate_report.py'
-                    echo "HTML report successfully generated at /jenkins/workspace/archive/metrics_report.html"
+                    echo "🐍 Running generate_report.py"
+                    sh 'python3 generate_report.py || echo "[WARN] Report generation failed, continuing build..."'
                 }
             }
         }
-
         stage('Update Build Badge Summary') {
             steps {
                 script {
